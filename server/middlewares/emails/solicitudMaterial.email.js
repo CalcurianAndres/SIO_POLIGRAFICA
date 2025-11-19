@@ -187,7 +187,7 @@ function SolicitudMateria(orden_){
     //            <br>
     //            <h1 align="center">Nº ${orden}</h1>
     //            <br>
-    //            No olvides ingresar al sistema para asignar material haciendo click <a href='http://192.168.0.27:8080/almacen'>Aqui</a>
+    //            No olvides ingresar al sistema para asignar material haciendo click <a href='http://192.168.0.23:8080/almacen'>Aqui</a>
     //         ${footer}`
     // };
     // transporter.sendMail(mailOptions, (err, info)=>{

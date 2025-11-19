@@ -1,8 +1,8 @@
 const nodemailer = require('nodemailer');
-const {header7,header2, footer} = require('../templates/template.email');
-let {tituloCorreo} = require('../templates/template.email')
+const { header7, header2, footer } = require('../templates/template.email');
+let { tituloCorreo } = require('../templates/template.email')
 
-function NuevaSolicitud_(correo,adjunto,table,motivo,correlativo){
+function NuevaSolicitud_(correo, adjunto, table, motivo, correlativo) {
     var transporter = nodemailer.createTransport({
         host: "mail.poligraficaindustrial.com",
         port: 2525,
@@ -28,19 +28,46 @@ function NuevaSolicitud_(correo,adjunto,table,motivo,correlativo){
         subject: `Solicitud de repuesto - RP-SOL-${correlativo}`,
         attachments: [{
             filename: `RP-SOL-${correlativo}.pdf`,
-            content:adjunto
+            content: adjunto
         }],
-        html:`${header7(titulo, 'Nueva Solicitud de Repuesto')}
+        html: `${header7(titulo, 'Nueva Solicitud de Repuesto')}
         <br>
                Se ha realizado una nueva solicitud de repuesto 
                <br>
                <style>
-               table, th, td {
-               border: 1px solid black;
-               border-collapse: collapse;
-               }
-               </style>
-              <table align="center" border=".5" cellpading="0" cellspacing="0" width="600" style="border-collapse: collapse;">
+.tabla {
+    width: 600px;
+    margin: 0 auto;
+    border-collapse: collapse;
+    background: #ffffff;
+    border: 1px solid #cccccc;
+  }
+
+  .tabla th {
+    background: #f2f2f2; /* gris clarito */
+    color: #333333;      /* gris suave */
+    text-align: left;
+    padding: 10px;
+    font-size: 15px;
+    border-bottom: 1px solid #cccccc;
+  }
+
+  .tabla td {
+    padding: 10px;
+    font-size: 14px;
+    color: #333333;
+    border-bottom: 1px solid #e6e6e6;
+  }
+
+  .tabla tr:nth-child(even) td {
+    background: #fafafa; /* gris suave alternado */
+  }
+
+  .tabla tr:last-child td {
+    border-bottom: none;
+  }
+</style>
+                <table class = 'tabla' align="center" border=".5" cellpading="0" cellspacing="0" width="600" style="border-collapse: collapse;">
                    <tr>
                        <th>Nº de parte</th>
                        <th>Repuesto</th>
@@ -56,10 +83,10 @@ function NuevaSolicitud_(correo,adjunto,table,motivo,correlativo){
             ${footer}`
     };
 
-    transporter.sendMail(mailOptions, (err, info)=>{
-        if(err){
-           console.log(err);
-        }else{
+    transporter.sendMail(mailOptions, (err, info) => {
+        if (err) {
+            console.log(err);
+        } else {
             //// //console.log(info);
         }
     });

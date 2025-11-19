@@ -89,11 +89,11 @@
     /***/
     function _(module, exports, __webpack_require__) {
       __webpack_require__(
-      /*! C:\Users\administrador.POLINDUSTRIAL\Desktop\SIO2025F-main\src\styles.css */
+      /*! C:\Users\administrador\Desktop\SIOBK\SIO2025F\src\styles.css */
       "OmL/");
 
       module.exports = __webpack_require__(
-      /*! C:\Users\administrador.POLINDUSTRIAL\Desktop\SIO2025F-main\src\styles.scss */
+      /*! C:\Users\administrador\Desktop\SIOBK\SIO2025F\src\styles.scss */
       "+EN/");
       /***/
     },
@@ -549,12 +549,12 @@
       var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(true); // Module
 
 
-      ___CSS_LOADER_EXPORT___.push([module.i, "/* You can add global styles to this file, and also import other style files */\n.mt-5{\n    margin-top: 5px;\n}", "", {
+      ___CSS_LOADER_EXPORT___.push([module.i, "/* You can add global styles to this file, and also import other style files */\r\n.mt-5{\r\n    margin-top: 5px;\r\n}", "", {
         "version": 3,
         "sources": ["webpack://src/styles.css"],
         "names": [],
         "mappings": "AAAA,8EAA8E;AAC9E;IACI,eAAe;AACnB",
-        "sourcesContent": ["/* You can add global styles to this file, and also import other style files */\n.mt-5{\n    margin-top: 5px;\n}"],
+        "sourcesContent": ["/* You can add global styles to this file, and also import other style files */\r\n.mt-5{\r\n    margin-top: 5px;\r\n}"],
         "sourceRoot": ""
       }]); // Exports
 

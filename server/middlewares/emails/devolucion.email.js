@@ -1,7 +1,7 @@
 const nodemailer = require('nodemailer');
-const {header, header3, footer} = require('../templates/template.email')
+const { header, header3, footer } = require('../templates/template.email')
 
-function devolucion(orden, solicitud,adjunto,nombre,correo,tabla){
+function devolucion(orden, solicitud, adjunto, nombre, correo, tabla) {
 
     var transporter = nodemailer.createTransport({
         host: "mail.poligraficaindustrial.com",
@@ -28,21 +28,48 @@ function devolucion(orden, solicitud,adjunto,nombre,correo,tabla){
         subject: `Devolución de Material`,
         attachments: [{
             filename: `AL-DEV-${solicitud}_${orden}.pdf`,
-            content:adjunto
+            content: adjunto
         }],
-        html:`${header3(titulo)}
+        html: `${header3(titulo)}
         <br>
                Se ha realizado la devolución de material relacionado con la orden de producción:
                <br>
                <h1 align="center">Nº ${orden}</h1>
                <br>
                <style>
-table, th, td {
-  border: 1px solid black;
-  border-collapse: collapse;
-}
+.tabla {
+    width: 600px;
+    margin: 0 auto;
+    border-collapse: collapse;
+    background: #ffffff;
+    border: 1px solid #cccccc;
+  }
+
+  .tabla th {
+    background: #f2f2f2; /* gris clarito */
+    color: #333333;      /* gris suave */
+    text-align: left;
+    padding: 10px;
+    font-size: 15px;
+    border-bottom: 1px solid #cccccc;
+  }
+
+  .tabla td {
+    padding: 10px;
+    font-size: 14px;
+    color: #333333;
+    border-bottom: 1px solid #e6e6e6;
+  }
+
+  .tabla tr:nth-child(even) td {
+    background: #fafafa; /* gris suave alternado */
+  }
+
+  .tabla tr:last-child td {
+    border-bottom: none;
+  }
 </style>
-            <table align="center" border=".5" cellpading="0" cellspacing="0" width="600" style="border-collapse: collapse;">
+                <table class = 'tabla' align="center" border=".5" cellpading="0" cellspacing="0" width="600" style="border-collapse: collapse;">
             <tr>
                 <th>Material</th>
                 <th>Cantidad</th>
@@ -52,16 +79,16 @@ table, th, td {
                 Es necesario verificar el material y aceptar en el sistema SIO
             ${footer}`
     };
-    transporter.sendMail(mailOptions, (err, info)=>{
-        if(err){
+    transporter.sendMail(mailOptions, (err, info) => {
+        if (err) {
             console.log(err);
-        }else{
+        } else {
             return
         }
     });
 }
 
-function devolucion2(orden, solicitud,nombre,correo,tabla){
+function devolucion2(orden, solicitud, nombre, correo, tabla) {
 
     var transporter = nodemailer.createTransport({
         host: "mail.poligraficaindustrial.com",
@@ -86,19 +113,46 @@ function devolucion2(orden, solicitud,nombre,correo,tabla){
         from: '"SIO - Sistema Integral de Operacion" <sio.soporte@poligraficaindustrial.com>',
         to: correo,
         subject: `Devolución de Material`,
-        html:`${header3(titulo)}
+        html: `${header3(titulo)}
         <br>
                Se ha realizado la devolución de material relacionado con la orden de producción:
                <br>
                <h1 align="center">Nº ${orden}</h1>
                <br>
                <style>
-table, th, td {
-  border: 1px solid black;
-  border-collapse: collapse;
-}
+.tabla {
+    width: 600px;
+    margin: 0 auto;
+    border-collapse: collapse;
+    background: #ffffff;
+    border: 1px solid #cccccc;
+  }
+
+  .tabla th {
+    background: #f2f2f2; /* gris clarito */
+    color: #333333;      /* gris suave */
+    text-align: left;
+    padding: 10px;
+    font-size: 15px;
+    border-bottom: 1px solid #cccccc;
+  }
+
+  .tabla td {
+    padding: 10px;
+    font-size: 14px;
+    color: #333333;
+    border-bottom: 1px solid #e6e6e6;
+  }
+
+  .tabla tr:nth-child(even) td {
+    background: #fafafa; /* gris suave alternado */
+  }
+
+  .tabla tr:last-child td {
+    border-bottom: none;
+  }
 </style>
-<table align="center" border=".5" cellpading="0" cellspacing="0" width="600" style="border-collapse: collapse;">
+                <table class = 'tabla' align="center" border=".5" cellpading="0" cellspacing="0" width="600" style="border-collapse: collapse;">
                    <tr>
                        <th>Material</th>
                        <th>Cantidad</th>
@@ -108,10 +162,10 @@ table, th, td {
                 El mismo deberia estar siendo gestionado por Yraida
             ${footer}`
     };
-    transporter.sendMail(mailOptions, (err, info)=>{
-        if(err){
+    transporter.sendMail(mailOptions, (err, info) => {
+        if (err) {
             console.log(err);
-        }else{
+        } else {
             return
         }
     });

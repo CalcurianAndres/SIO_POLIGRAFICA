@@ -7,7 +7,7 @@
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-module.exports = __webpack_require__(/*! C:\Users\administrador.POLINDUSTRIAL\Desktop\SIO2025F-main\src\polyfills.ts */"hN/g");
+module.exports = __webpack_require__(/*! C:\Users\administrador\Desktop\SIOBK\SIO2025F\src\polyfills.ts */"hN/g");
 
 
 /***/ }),

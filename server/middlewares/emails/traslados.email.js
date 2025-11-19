@@ -1,9 +1,9 @@
 const nodemailer = require('nodemailer');
-const { header7, footer} = require('../templates/template.email')
-const usuario  = require('../../database/models/usuarios.model');
+const { header7, footer } = require('../templates/template.email')
+const usuario = require('../../database/models/usuarios.model');
 // const usuariosModel = require('../../database/models/usuarios.model');
 
-const NuevoTraslado = async(data, adjunto) =>{
+const NuevoTraslado = async (data, adjunto) => {
 
 
     table = `<tr>
@@ -16,7 +16,7 @@ const NuevoTraslado = async(data, adjunto) =>{
     nombre = data.solicitado.split(' ')[0]
     apellido = data.solicitado.split(' ')[1]
 
-    const usuario_ = await usuario.find({Nombre:nombre, Apellido:apellido})
+    const usuario_ = await usuario.find({ Nombre: nombre, Apellido: apellido })
 
     var transporter = nodemailer.createTransport({
         host: "mail.poligraficaindustrial.com",
@@ -43,19 +43,46 @@ const NuevoTraslado = async(data, adjunto) =>{
         subject: `Traslado de material - AL-NT-${data.numero}`,
         attachments: [{
             filename: `AL-NT-${data.numero}.pdf`,
-            content:adjunto
+            content: adjunto
         }],
-        html:`${header7(titulo, 'Nueva Solicitud de traslado de material')}
+        html: `${header7(titulo, 'Nueva Solicitud de traslado de material')}
         <br>
                Se ha aprobado tu solicitud de traslado de material destino ${data.destino}
                <br>
                <style>
-               table, th, td {
-               border: 1px solid black;
-               border-collapse: collapse;
-               }
-               </style>
-              <table align="center" border=".5" cellpading="0" cellspacing="0" width="600" style="border-collapse: collapse;">
+.tabla {
+    width: 600px;
+    margin: 0 auto;
+    border-collapse: collapse;
+    background: #ffffff;
+    border: 1px solid #cccccc;
+  }
+
+  .tabla th {
+    background: #f2f2f2; /* gris clarito */
+    color: #333333;      /* gris suave */
+    text-align: left;
+    padding: 10px;
+    font-size: 15px;
+    border-bottom: 1px solid #cccccc;
+  }
+
+  .tabla td {
+    padding: 10px;
+    font-size: 14px;
+    color: #333333;
+    border-bottom: 1px solid #e6e6e6;
+  }
+
+  .tabla tr:nth-child(even) td {
+    background: #fafafa; /* gris suave alternado */
+  }
+
+  .tabla tr:last-child td {
+    border-bottom: none;
+  }
+</style>
+                <table class = 'tabla' align="center" border=".5" cellpading="0" cellspacing="0" width="600" style="border-collapse: collapse;">
                    <tr>
                        <th>Producto</th>
                        <th>codigo</th>
@@ -69,10 +96,10 @@ const NuevoTraslado = async(data, adjunto) =>{
             ${footer}`
     };
 
-    transporter.sendMail(mailOptions, (err, info)=>{
-        if(err){
-           console.log(err);
-        }else{
+    transporter.sendMail(mailOptions, (err, info) => {
+        if (err) {
+            console.log(err);
+        } else {
             console.log(info);
         }
     });

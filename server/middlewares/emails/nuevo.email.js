@@ -1,10 +1,10 @@
 const nodemailer = require('nodemailer');
-const {header, header2, footer} = require('../templates/template.email')
+const { header, header2, footer } = require('../templates/template.email')
 
 
 // ENVIAR EMAIL POR CORREO NUEVO
 
-function emailNuevo(titulo, correo, nombre, apellido, any,sede,departamento){
+function emailNuevo(titulo, correo, nombre, apellido, any, sede, departamento) {
     var transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
@@ -13,7 +13,7 @@ function emailNuevo(titulo, correo, nombre, apellido, any,sede,departamento){
         }
     });
     let tituloCorreo = 'Nuevo ticket creado!'
-    const mensaje = 
+    const mensaje =
         `${header(tituloCorreo)}
         Se ha generado un nuevo ticket <strong>${titulo}</strong>
         <br>
@@ -25,32 +25,32 @@ function emailNuevo(titulo, correo, nombre, apellido, any,sede,departamento){
         from: '"Soporte Técnico" <thermo.soporte.group@gmail.com>',
         to: correo,
         subject: 'Ticket creado exitosamente',
-        html:mensaje
+        html: mensaje
     };
 
-    transporter.sendMail(mailOptions, (err, info)=>{
-        if(err){
+    transporter.sendMail(mailOptions, (err, info) => {
+        if (err) {
             console.log(err);
-            if(departamento != 'profit'){
-                nuevoSoporte(titulo, nombre, apellido, any,sede)
-            }else{
-                nuevoProfit(titulo, nombre, apellido, any,sede)
+            if (departamento != 'profit') {
+                nuevoSoporte(titulo, nombre, apellido, any, sede)
+            } else {
+                nuevoProfit(titulo, nombre, apellido, any, sede)
             }
-        }else{
-            if(departamento != 'profit'){
-                nuevoSoporte(titulo, nombre, apellido, any,sede)
-            }else{
-                nuevoProfit(titulo, nombre, apellido, any,sede)
+        } else {
+            if (departamento != 'profit') {
+                nuevoSoporte(titulo, nombre, apellido, any, sede)
+            } else {
+                nuevoProfit(titulo, nombre, apellido, any, sede)
             }
         }
     });
 
 
 }
-function NuevaOrden3(orden,lotes,adjunto){
+function NuevaOrden3(orden, lotes, adjunto) {
     var transporter = nodemailer.createTransport({
         service: 'gmail',
-        port:465,
+        port: 465,
         secure: true,
         auth: {
             user: process.env.CORREO,
@@ -64,21 +64,48 @@ function NuevaOrden3(orden,lotes,adjunto){
         subject: `Nueva orden de producción`,
         attachments: [{
             filename: 'FAL-005.pdf',
-            content:adjunto
+            content: adjunto
         }],
-        html:`${header2(titulo)}
+        html: `${header2(titulo)}
         <br>
                Se ha realizado la asignación de material relacionado con la orden de producción:
                <br>
                <h1 align="center">Nº ${orden}</h1>
                <br>
                <style>
-table, th, td {
-  border: 1px solid black;
-  border-collapse: collapse;
-}
+.tabla {
+    width: 600px;
+    margin: 0 auto;
+    border-collapse: collapse;
+    background: #ffffff;
+    border: 1px solid #cccccc;
+  }
+
+  .tabla th {
+    background: #f2f2f2; /* gris clarito */
+    color: #333333;      /* gris suave */
+    text-align: left;
+    padding: 10px;
+    font-size: 15px;
+    border-bottom: 1px solid #cccccc;
+  }
+
+  .tabla td {
+    padding: 10px;
+    font-size: 14px;
+    color: #333333;
+    border-bottom: 1px solid #e6e6e6;
+  }
+
+  .tabla tr:nth-child(even) td {
+    background: #fafafa; /* gris suave alternado */
+  }
+
+  .tabla tr:last-child td {
+    border-bottom: none;
+  }
 </style>
-                <table align="center" border=".5" cellpading="0" cellspacing="0" width="600" style="border-collapse: collapse;">
+                <table class = 'tabla' align="center" border=".5" cellpading="0" cellspacing="0" width="600" style="border-collapse: collapse;">
                     <tr>
                     <th>Material</th>
                     <th>Lotes</th>
@@ -89,22 +116,22 @@ table, th, td {
                Ya puedes dirigirte al almacen a retirar
             ${footer}`
     };
-    transporter.sendMail(mailOptions, (err, info)=>{
-        if(err){
+    transporter.sendMail(mailOptions, (err, info) => {
+        if (err) {
             console.log(err);
-        }else{
+        } else {
             //// //console.log(info);
         }
     });
 }
 
-function NuevaOrden2(orden, lotes, adjunto){
-    
+function NuevaOrden2(orden, lotes, adjunto) {
+
     // //// //console.log(lotes, 'lotes')
 
     var transporter = nodemailer.createTransport({
         service: 'gmail',
-        port:465,
+        port: 465,
         secure: true,
         auth: {
             user: process.env.CORREO,
@@ -122,22 +149,49 @@ function NuevaOrden2(orden, lotes, adjunto){
         to: "carlos.mejias@poligraficaindustrial.com",
         subject: `Nueva orden de producción`,
         attachments: [{
-                filename: 'FAL-005.pdf',
-                content:adjunto
-            }],
-        html:`${header2(titulo)}
+            filename: 'FAL-005.pdf',
+            content: adjunto
+        }],
+        html: `${header2(titulo)}
         <br>
                Se ha realizado la asignación de material relacionado con la orden de producción:
                <br>
                <h1 align="center">Nº ${orden}</h1>
                <br>
                <style>
-table, th, td {
-  border: 1px solid black;
-  border-collapse: collapse;
-}
+.tabla {
+    width: 600px;
+    margin: 0 auto;
+    border-collapse: collapse;
+    background: #ffffff;
+    border: 1px solid #cccccc;
+  }
+
+  .tabla th {
+    background: #f2f2f2; /* gris clarito */
+    color: #333333;      /* gris suave */
+    text-align: left;
+    padding: 10px;
+    font-size: 15px;
+    border-bottom: 1px solid #cccccc;
+  }
+
+  .tabla td {
+    padding: 10px;
+    font-size: 14px;
+    color: #333333;
+    border-bottom: 1px solid #e6e6e6;
+  }
+
+  .tabla tr:nth-child(even) td {
+    background: #fafafa; /* gris suave alternado */
+  }
+
+  .tabla tr:last-child td {
+    border-bottom: none;
+  }
 </style>
-                <table align="center" border=".5" cellpading="0" cellspacing="0" width="600" style="border-collapse: collapse;">
+                <table class = 'tabla' align="center" border=".5" cellpading="0" cellspacing="0" width="600" style="border-collapse: collapse;">
                     <tr>
                     <th>Material</th>
                     <th>Lotes</th>
@@ -148,17 +202,17 @@ table, th, td {
                Ya puedes dirigirte al almacen a retirar
             ${footer}`
     };
-    transporter.sendMail(mailOptions, (err, info)=>{
-        if(err){
+    transporter.sendMail(mailOptions, (err, info) => {
+        if (err) {
             console.log(err);
-        }else{
+        } else {
             // //// //console.log(info);
             //// //console.log('correo enviado')
         }
     });
 }
 
-function NuevaOrden(orden, nombre, correo){
+function NuevaOrden(orden, nombre, correo) {
     var transporter = nodemailer.createTransport({
         host: "mail.poligraficaindustrial.com",
         port: 2525,
@@ -180,25 +234,25 @@ function NuevaOrden(orden, nombre, correo){
         from: '"SIO - Sistema Integral de Operacion" <sio.soporte@poligraficaindustrial.com>',
         to: correo,
         subject: `Nueva orden de producción`,
-        html:`${header2(titulo)}
+        html: `${header2(titulo)}
         <br>
                Se ha generado una nueva orden de producción:
                <br>
                <h1 align="center">Nº ${orden}</h1>
                <br>
-               para consultarla ingresa al sistema haciendo click <a href='http://192.168.0.27:8080'>Aqui</a>
+               para consultarla ingresa al sistema haciendo click <a href='http://192.168.0.23:8080'>Aqui</a>
             ${footer}`
     };
-    transporter.sendMail(mailOptions, (err, info)=>{
-        if(err){
+    transporter.sendMail(mailOptions, (err, info) => {
+        if (err) {
             console.log(err);
-        }else{
+        } else {
             //// //console.log(info);
         }
     });
 }
 
-function SolicitudMateria(orden, producto){
+function SolicitudMateria(orden, producto) {
     var transporter = nodemailer.createTransport({
         host: "mail.poligraficaindustrial.com",
         port: 2525,
@@ -220,25 +274,25 @@ function SolicitudMateria(orden, producto){
         from: '"SIO - Sistema Integral de Operacion" <sio.soporte@poligraficaindustrial.com>',
         to: "calcurianandres@gmail.com, Yraida.Baptista@poligraficaindustrial.com",
         subject: `Solicitud de Materiales`,
-        html:`${header(titulo)}
+        html: `${header(titulo)}
         <br>
                Se ha generado una solicitud de material relacionado con la orden de produccion:
                <br>
                <h1 align="center">Nº ${orden}</h1>
                <br>
-               No olvides ingresar al sistema para asignar material haciendo click <a href='http://192.168.0.27:8080/almacen'>Aqui</a>
+               No olvides ingresar al sistema para asignar material haciendo click <a href='http://192.168.0.23:8080/almacen'>Aqui</a>
             ${footer}`
     };
-    transporter.sendMail(mailOptions, (err, info)=>{
-        if(err){
+    transporter.sendMail(mailOptions, (err, info) => {
+        if (err) {
             console.log(err);
-        }else{
+        } else {
             //// //console.log(info);
         }
     });
 }
 
-function nuevoProfit(titulo, nombre, apellido, any,sede){
+function nuevoProfit(titulo, nombre, apellido, any, sede) {
 
     var transporter = nodemailer.createTransport({
         service: 'gmail',
@@ -252,23 +306,23 @@ function nuevoProfit(titulo, nombre, apellido, any,sede){
         from: '"Soporte Técnico" <ticket.purissima@gmail.com>',
         to: "ahernandez@purissimagroup.com, ycasares@purissimagroup.com, calcurianandres@gmail.com, jsotin@hotmail.com",
         subject: `Nuevo ticket - ${titulo}`,
-        html:`${header(tituloCorreo)}
+        html: `${header(tituloCorreo)}
                 Se generó un nuevo ticket por ${nombre} ${apellido}, con el titulo ${titulo}
                 <br>
                 el AnyDesk del contacto es: <strong>${any}</strong>
             ${footer}`
     };
 
-    transporter.sendMail(mailOptions, (err, info)=>{
-        if(err){
+    transporter.sendMail(mailOptions, (err, info) => {
+        if (err) {
             console.log(err);
-        }else{
+        } else {
             //// //console.log(info);
         }
     });
 }
 
-function nuevoSoporte(titulo, nombre, apellido, any,sede){
+function nuevoSoporte(titulo, nombre, apellido, any, sede) {
 
     var transporter = nodemailer.createTransport({
         service: 'gmail',
@@ -282,17 +336,17 @@ function nuevoSoporte(titulo, nombre, apellido, any,sede){
         from: '"Soporte Técnico (Purissima)" <ticket.purissima@gmail.com>',
         to: "calcurianandres@gmail.com, jsotin@hotmail.com",
         subject: `Nuevo ticket - ${titulo}`,
-        html:`${header(tituloCorreo)}
+        html: `${header(tituloCorreo)}
                 Se generó un nuevo ticket por ${nombre} ${apellido} (Purissima), con el titulo '${titulo}'
                 <br>
                 el AnyDesk del contacto es: <strong>${any}</strong>
             ${footer}`
     };
 
-    transporter.sendMail(mailOptions, (err, info)=>{
-        if(err){
-           console.log(err);
-        }else{
+    transporter.sendMail(mailOptions, (err, info) => {
+        if (err) {
+            console.log(err);
+        } else {
             //// //console.log(info);
         }
     });

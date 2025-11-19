@@ -121,7 +121,7 @@ app.post('/api/login', (req, res) => {
         }
 
         // Muestra en consola el nombre del usuario que intenta conectarse
-        console.log('Se conectó: ', usuarioDB.Nombre, ' ', usuarioDB.Apellido)
+        // console.log('Se conectó: ', usuarioDB.Nombre, ' ', usuarioDB.Apellido)
 
         // Si no existe el usuario
         if (!usuarioDB) {

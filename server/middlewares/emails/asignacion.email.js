@@ -1,7 +1,7 @@
 const nodemailer = require('nodemailer');
-const {header, header2, header5, footer} = require('../templates/template.email')
+const { header, header2, header5, footer } = require('../templates/template.email')
 
-function asignacion_(orden, solicitud, lotes,adjunto,nombre,correo){
+function asignacion_(orden, solicitud, lotes, adjunto, nombre, correo) {
 
     var transporter = nodemailer.createTransport({
         host: "mail.poligraficaindustrial.com",
@@ -28,19 +28,46 @@ function asignacion_(orden, solicitud, lotes,adjunto,nombre,correo){
         subject: `Nueva asignación de material`,
         attachments: [{
             filename: `AL-ASG-${solicitud}_${orden}.pdf`,
-            content:adjunto
+            content: adjunto
         }],
-        html:`${header5(titulo)}
+        html: `${header5(titulo)}
         <br>
                Se ha realizado la asignación de material solicitado
                <br>
                <style>
-table, th, td {
-  border: 1px solid black;
-  border-collapse: collapse;
-}
+.tabla {
+    width: 600px;
+    margin: 0 auto;
+    border-collapse: collapse;
+    background: #ffffff;
+    border: 1px solid #cccccc;
+  }
+
+  .tabla th {
+    background: #f2f2f2; /* gris clarito */
+    color: #333333;      /* gris suave */
+    text-align: left;
+    padding: 10px;
+    font-size: 15px;
+    border-bottom: 1px solid #cccccc;
+  }
+
+  .tabla td {
+    padding: 10px;
+    font-size: 14px;
+    color: #333333;
+    border-bottom: 1px solid #e6e6e6;
+  }
+
+  .tabla tr:nth-child(even) td {
+    background: #fafafa; /* gris suave alternado */
+  }
+
+  .tabla tr:last-child td {
+    border-bottom: none;
+  }
 </style>
-                <table align="center" border=".5" cellpading="0" cellspacing="0" width="600" style="border-collapse: collapse;">
+                <table class = 'tabla' align="center" border=".5" cellpading="0" cellspacing="0" width="600" style="border-collapse: collapse;">
                     <tr>
                     <th>Material</th>
                     <th>Lotes</th>
@@ -51,18 +78,18 @@ table, th, td {
                Ya puedes dirigirte al almacen a retirar
             ${footer}`
     };
-    transporter.sendMail(mailOptions, (err, info)=>{
-        if(err){
+    transporter.sendMail(mailOptions, (err, info) => {
+        if (err) {
             //console.log('error');
             console.log(err);
-        }else{
+        } else {
             //console.log(info);
             return
         }
     });
 }
 
-function asignacion(orden, solicitud, lotes,adjunto,nombre,correo){
+function asignacion(orden, solicitud, lotes, adjunto, nombre, correo) {
 
     var transporter = nodemailer.createTransport({
         host: "mail.poligraficaindustrial.com",
@@ -89,21 +116,48 @@ function asignacion(orden, solicitud, lotes,adjunto,nombre,correo){
         subject: `Nueva asignación de material`,
         attachments: [{
             filename: `AL-ASG-${solicitud}_${orden}.pdf`,
-            content:adjunto
+            content: adjunto
         }],
-        html:`${header5(titulo)}
+        html: `${header5(titulo)}
         <br>
                Se ha realizado la asignación de material relacionado con la orden de producción:
                <br>
                <h1 align="center">Nº ${orden}</h1>
                <br>
                <style>
-table, th, td {
-  border: 1px solid black;
-  border-collapse: collapse;
-}
+.tabla {
+    width: 600px;
+    margin: 0 auto;
+    border-collapse: collapse;
+    background: #ffffff;
+    border: 1px solid #cccccc;
+  }
+
+  .tabla th {
+    background: #f2f2f2; /* gris clarito */
+    color: #333333;      /* gris suave */
+    text-align: left;
+    padding: 10px;
+    font-size: 15px;
+    border-bottom: 1px solid #cccccc;
+  }
+
+  .tabla td {
+    padding: 10px;
+    font-size: 14px;
+    color: #333333;
+    border-bottom: 1px solid #e6e6e6;
+  }
+
+  .tabla tr:nth-child(even) td {
+    background: #fafafa; /* gris suave alternado */
+  }
+
+  .tabla tr:last-child td {
+    border-bottom: none;
+  }
 </style>
-                <table align="center" border=".5" cellpading="0" cellspacing="0" width="600" style="border-collapse: collapse;">
+                <table class = 'tabla' align="center" border=".5" cellpading="0" cellspacing="0" width="600" style="border-collapse: collapse;">
                     <tr>
                     <th>Material</th>
                     <th>Lotes</th>
@@ -114,19 +168,19 @@ table, th, td {
                Ya puedes dirigirte al almacen a retirar
             ${footer}`
     };
-    transporter.sendMail(mailOptions, (err, info)=>{
-        if(err){
+    transporter.sendMail(mailOptions, (err, info) => {
+        if (err) {
             //console.log('error');
 
             console.log(err);
-        }else{
+        } else {
             //console.log(info);
         }
     });
 }
 
 
-function asignacion___(orden, solicitud, lotes,adjunto,nombre,correo){
+function asignacion___(orden, solicitud, lotes, adjunto, nombre, correo) {
 
     var transporter = nodemailer.createTransport({
         host: "mail.poligraficaindustrial.com",
@@ -153,21 +207,48 @@ function asignacion___(orden, solicitud, lotes,adjunto,nombre,correo){
         subject: `Nueva asignación de material`,
         attachments: [{
             filename: `AL-ASG-${solicitud}_${orden}.pdf`,
-            content:adjunto
+            content: adjunto
         }],
-        html:`${header5(titulo)}
+        html: `${header5(titulo)}
         <br>
                Se ha realizado la asignación de material relacionado con la orden de producción:
                <br>
                <h1 align="center">Nº ${orden}</h1>
                <br>
                <style>
-table, th, td {
-  border: 1px solid black;
-  border-collapse: collapse;
-}
+.tabla {
+    width: 600px;
+    margin: 0 auto;
+    border-collapse: collapse;
+    background: #ffffff;
+    border: 1px solid #cccccc;
+  }
+
+  .tabla th {
+    background: #f2f2f2; /* gris clarito */
+    color: #333333;      /* gris suave */
+    text-align: left;
+    padding: 10px;
+    font-size: 15px;
+    border-bottom: 1px solid #cccccc;
+  }
+
+  .tabla td {
+    padding: 10px;
+    font-size: 14px;
+    color: #333333;
+    border-bottom: 1px solid #e6e6e6;
+  }
+
+  .tabla tr:nth-child(even) td {
+    background: #fafafa; /* gris suave alternado */
+  }
+
+  .tabla tr:last-child td {
+    border-bottom: none;
+  }
 </style>
-                <table align="center" border=".5" cellpading="0" cellspacing="0" width="600" style="border-collapse: collapse;">
+                <table class = 'tabla' align="center" border=".5" cellpading="0" cellspacing="0" width="600" style="border-collapse: collapse;">
                     <tr>
                     <th>Material</th>
                     <th>Lotes</th>
@@ -178,11 +259,11 @@ table, th, td {
                Ya puedes dirigirte al almacen a retirar
             ${footer}`
     };
-    transporter.sendMail(mailOptions, (err, info)=>{
-        if(err){
+    transporter.sendMail(mailOptions, (err, info) => {
+        if (err) {
             //console.log('error');
             console.log(err);
-        }else{
+        } else {
             //console.log(info);
         }
     });

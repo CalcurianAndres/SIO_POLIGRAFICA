@@ -15,9 +15,11 @@ const lote = require('../database/models/lotes.model');
 const Despacho = require('../database/models/despacho.model')
 const almacenadoExterno = require('../database/models/almacenadoExterno');
 const traslados = require('../database/models/traslados.model');
+const retorno = require('../database/models/retornos.model')
 
 const moment = require('moment');
 
+const { Retornos } = require('../middlewares/docs/retornos.pdf')
 
 // NUEVA BASE
 const Materiales = require('../database/models/materiales.model')
@@ -41,6 +43,139 @@ app.get('/api/lotes/:orden', (req, res) => {
             res.json(lotes)
         })
 })
+
+app.post('/api/actualizar-materiales', async (req, res) => {
+    const materiales = req.body.material; // [{ lote: 'L1', codigo: 'C1' }, ...]
+    const retorno_ = req.body.retorno
+
+    console.log(req.body)
+
+    if (!Array.isArray(materiales)) {
+        return res.status(400).json({ error: 'Se esperaba un array de materiales' });
+    }
+
+    try {
+        for (const { lote, codigo } of materiales) {
+            // 1. Eliminar de AlmacenadoExterno
+            await almacenadoExterno.deleteOne({ lote, codigo });
+
+            // 2. Actualizar en Almacenado
+            await Almacenado.updateOne(
+                { lote, codigo },
+                { $set: { fuera: false } }
+            );
+
+            await retorno.updateOne({ _id: retorno_ }, { estatus: 'Finalizado' })
+        }
+
+        res.status(200).json({ mensaje: 'Materiales actualizados correctamente' });
+    } catch (error) {
+        console.error('Error al actualizar materiales:', error);
+        res.status(500).json({ error: 'Error interno del servidor' });
+    }
+});
+
+app.post('/api/retorno', async (req, res) => {
+    const retorno_ = req.body
+
+    try {
+
+        console.log(retorno_)
+        const newRetorno = new retorno(retorno_)
+
+        newRetorno.save((err, retornoDB) => {
+            if (err) {
+                return res.status(400).json({
+                    ok: false,
+                    err
+                });
+            }
+
+            res.json(retornoDB)
+        })
+    } catch (error) {
+        console.error('Error al actualizar materiales:', error);
+        res.status(500).json({ error: 'Error interno del servidor' });
+    }
+});
+
+app.get('/api/retorno', async (req, res) => {
+    try {
+
+        retorno.find({ borrado: false }, (err, retornos) => {
+            if (err) {
+                return res.status(400).json({
+                    ok: false,
+                    err
+                });
+            }
+
+            res.json(retornos)
+        })
+
+    } catch (err) {
+        console.error('Error al actualizar materiales:', error);
+        res.status(500).json({ error: 'Error interno del servidor' });
+    }
+})
+
+app.get('/api/retornos/:id/:desicion', async (req, res) => {
+
+    let id = req.params.id
+    let estatus = req.params.desicion
+
+    try {
+        if (estatus === 'Aprobado') {
+
+            let retorno_ = await retorno.findById(id)
+
+            if (!retorno_.numero) {
+                const yearPrefix = new Date().getFullYear().toString().slice(2);
+
+                const lastDoc = await retorno.findOne({
+                    numero: { $regex: `^${yearPrefix}` }
+                }).sort({ numero: -1 });
+
+                let counter = 1;
+                if (lastDoc && typeof lastDoc.numero === 'string') {
+                    const numberPart = lastDoc.numero.slice(2);
+                    if (/^\d+$/.test(numberPart)) {
+                        counter = parseInt(numberPart, 10) + 1;
+                    }
+                }
+
+                retorno_.numero = `${yearPrefix}${String(counter).padStart(3, '0')}`;
+            }
+
+            retorno_.estatus = estatus
+            await retorno_.save();
+
+            let retorno_updated = await retorno.findById(id);
+
+            Retornos(retorno_updated)
+
+            res.json(retorno_updated)
+            return
+        }
+
+        retorno.findByIdAndUpdate(id, { estatus: estatus }, (err, retornos) => {
+            if (err) {
+                return res.status(400).json({
+                    ok: false,
+                    err
+                });
+            }
+
+
+            res.json(retornos)
+        })
+
+    } catch (err) {
+        console.error('Error al actualizar materiales:', err);
+        res.status(500).json({ error: 'Error interno del servidor' });
+    }
+})
+
 
 app.post('/api/almacenado', (req, res) => {
 

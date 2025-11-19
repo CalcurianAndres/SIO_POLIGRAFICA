@@ -1,9 +1,9 @@
 const nodemailer = require('nodemailer');
-const {header__, footer} = require('../templates/template.email')
+const { header__, footer } = require('../templates/template.email')
 
 
-function Nueva_recepcion(){
-    
+function Nueva_recepcion() {
+
     // //// //console.log(lotes, 'lotes')
 
     var transporter = nodemailer.createTransport({
@@ -30,16 +30,43 @@ function Nueva_recepcion(){
         // to: "calcurian.andrew@gmail.com",
         to: "calcurianandres@gmail.com",
         subject: `Nueva recepción de material`,
-        html:`${header__(encabezado,titulo)}
+        html: `${header__(encabezado, titulo)}
         <br>
                Se encuentra disponible para verificación el siguiente material asociado a la factura/Nota de entrega N° 0000
                <style>
-table, th, td {
-  border: 1px solid black;
-  border-collapse: collapse;
-}
+.tabla {
+    width: 600px;
+    margin: 0 auto;
+    border-collapse: collapse;
+    background: #ffffff;
+    border: 1px solid #cccccc;
+  }
+
+  .tabla th {
+    background: #f2f2f2; /* gris clarito */
+    color: #333333;      /* gris suave */
+    text-align: left;
+    padding: 10px;
+    font-size: 15px;
+    border-bottom: 1px solid #cccccc;
+  }
+
+  .tabla td {
+    padding: 10px;
+    font-size: 14px;
+    color: #333333;
+    border-bottom: 1px solid #e6e6e6;
+  }
+
+  .tabla tr:nth-child(even) td {
+    background: #fafafa; /* gris suave alternado */
+  }
+
+  .tabla tr:last-child td {
+    border-bottom: none;
+  }
 </style>
-                <table align="center" border=".5" cellpading="0" cellspacing="0" width="600" style="border-collapse: collapse;">
+                <table class = 'tabla' align="center" border=".5" cellpading="0" cellspacing="0" width="600" style="border-collapse: collapse;">
                     <tr>
                     <th>Material</th>
                     <th>Lotes</th>
@@ -54,18 +81,18 @@ table, th, td {
                Dirígete al sistema SIO para su verificación
             ${footer}`
     };
-    transporter.sendMail(mailOptions, (err, info)=>{
-        if(err){
+    transporter.sendMail(mailOptions, (err, info) => {
+        if (err) {
             console.log(err);
-        }else{
+        } else {
             // //console.log(info);
             // //console.log('ENVIO CORREO DE VERIFICACIÓN DE MATERIAL')
         }
     });
 }
 
-function Nueva_recepcion2(){
-    
+function Nueva_recepcion2() {
+
     // //// //console.log(lotes, 'lotes')
 
     var transporter = nodemailer.createTransport({
@@ -92,16 +119,43 @@ function Nueva_recepcion2(){
         // to: "calcurian.andrew@gmail.com",
         to: "zuleima.vela@poligraficaindustrial.com",
         subject: `Recepcion de material`,
-        html:`${header__(encabezado,titulo)}
+        html: `${header__(encabezado, titulo)}
         <br>
                Se encuentra disponible para verificación el siguiente material asociado a la factura/Nota de entrega N° 0000
                <style>
-table, th, td {
-  border: 1px solid black;
-  border-collapse: collapse;
-}
+.tabla {
+    width: 600px;
+    margin: 0 auto;
+    border-collapse: collapse;
+    background: #ffffff;
+    border: 1px solid #cccccc;
+  }
+
+  .tabla th {
+    background: #f2f2f2; /* gris clarito */
+    color: #333333;      /* gris suave */
+    text-align: left;
+    padding: 10px;
+    font-size: 15px;
+    border-bottom: 1px solid #cccccc;
+  }
+
+  .tabla td {
+    padding: 10px;
+    font-size: 14px;
+    color: #333333;
+    border-bottom: 1px solid #e6e6e6;
+  }
+
+  .tabla tr:nth-child(even) td {
+    background: #fafafa; /* gris suave alternado */
+  }
+
+  .tabla tr:last-child td {
+    border-bottom: none;
+  }
 </style>
-                <table align="center" border=".5" cellpading="0" cellspacing="0" width="600" style="border-collapse: collapse;">
+                <table class = 'tabla' align="center" border=".5" cellpading="0" cellspacing="0" width="600" style="border-collapse: collapse;">
                     <tr>
                     <th>Material</th>
                     <th>Lotes</th>
@@ -116,10 +170,10 @@ table, th, td {
                Dirígete al sistema SIO para su verificación
             ${footer}`
     };
-    transporter.sendMail(mailOptions, (err, info)=>{
-        if(err){
-           console.log(err);
-        }else{
+    transporter.sendMail(mailOptions, (err, info) => {
+        if (err) {
+            console.log(err);
+        } else {
             // //console.log(info);
             // //console.log('ENVIO CORREO DE VERIFICACIÓN DE MATERIAL')
         }
