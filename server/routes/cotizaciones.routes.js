@@ -188,6 +188,8 @@ app.put('/api/facturado', async (req, res) => {
 app.post('/api/incremento/pre', async (req, res) => {
   try {
     const body = req.body;
+
+
     if (!body || !body._id) {
       // 🚫 Si no llega el _id, no se puede continuar
       return res.status(400).json({ ok: false, err: 'Falta body._id' });
