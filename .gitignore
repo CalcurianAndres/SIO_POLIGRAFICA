@@ -4,3 +4,7 @@ node_modules/
 # Ignorar todo el contenido de uploads pero conservar archivos .gitkeep
 /server/uploads/**/*
 !/server/uploads/**/.gitkeep
+
+# logs
+/server/logs/*
+logs/*

@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const mongologger = require('../../middlewares/mongologger');
 
 let Schema = mongoose.Schema;
 
@@ -10,44 +11,44 @@ const trasladoSchema = new Schema({
   numero: {
     type: String,
   },
-  estatus:{
-    type:String,
-    default:'Por confirmar'
+  estatus: {
+    type: String,
+    default: 'Por confirmar'
   },
   materiales: [
     {
-        material:{
-            type:Schema.Types.ObjectId,
-            ref: 'material'
-        },
-        codigo:{
-            type:String,
-            required:true
-        },
-        lote:{
-            type:String,
-            required:true
-        },
-        cantidad:{
-            type:String,
-            required:true
-        },
-        pedido:{
-            type:String,
-        },
-        precio:{
-            type:Number
-        },
-        fecha:{
-            type:Date,
-            default:Date.now
-        },
-        almacen:{
-            type:String
-        },
-        observacion:{
-            type:String
-        }
+      material: {
+        type: Schema.Types.ObjectId,
+        ref: 'material'
+      },
+      codigo: {
+        type: String,
+        required: true
+      },
+      lote: {
+        type: String,
+        required: true
+      },
+      cantidad: {
+        type: String,
+        required: true
+      },
+      pedido: {
+        type: String,
+      },
+      precio: {
+        type: Number
+      },
+      fecha: {
+        type: Date,
+        default: Date.now
+      },
+      almacen: {
+        type: String
+      },
+      observacion: {
+        type: String
+      }
     }
   ],
   observacion: {
@@ -85,5 +86,9 @@ const trasladoSchema = new Schema({
 
 //   next();
 // });
+
+
+
+trasladoSchema.plugin(mongologger());
 
 module.exports = mongoose.model('traslados', trasladoSchema);

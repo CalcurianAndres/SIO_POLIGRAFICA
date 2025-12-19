@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const mongologger = require('../../middlewares/mongologger');
 
 let Schema = mongoose.Schema;
 
@@ -26,7 +27,11 @@ let MaquinaSchema = new Schema([{
         type:Number,
     }
 
-}]);
+}], {
+    timestamps: true
+});
+
+MaquinaSchema.plugin(mongologger());
 
 
 module.exports = mongoose.model('maquina', MaquinaSchema)

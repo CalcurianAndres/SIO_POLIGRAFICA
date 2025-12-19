@@ -1,30 +1,35 @@
 const mongoose = require('mongoose');
+const mongologger = require('../../middlewares/mongologger');
 
 let Schema = mongoose.Schema;
 
 let NotificacionesSchema = new Schema([{
-    notificacion:[
+    notificacion: [
         {
-            fecha:{
-                type:Date,
-                default:Date.now
+            fecha: {
+                type: Date,
+                default: Date.now
             },
-            usuario:{
-                type:Schema.Types.ObjectId,
+            usuario: {
+                type: Schema.Types.ObjectId,
                 ref: 'usuario'
             },
             tipo: {
-                type:String,
-                required:true
+                type: String,
+                required: true
             },
             mensaje: {
-                type:String,
+                type: String,
                 required: true
             }
         }
-        
+
     ]
-}]);
+}], {
+    timestamps: true
+});
+
+NotificacionesSchema.plugin(mongologger());
 
 
 module.exports = mongoose.model('notificacion', NotificacionesSchema)

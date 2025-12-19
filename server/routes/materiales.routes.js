@@ -16,6 +16,7 @@ const Despacho = require('../database/models/despacho.model')
 const almacenadoExterno = require('../database/models/almacenadoExterno');
 const traslados = require('../database/models/traslados.model');
 const retorno = require('../database/models/retornos.model')
+const RepuestoSolicitud = require('../database/models/partesr.model');
 
 const moment = require('moment');
 
@@ -30,8 +31,222 @@ const { FAL006 } = require('../middlewares/docs/FAL-006.pdf');
 const { SolicitarRequisicion } = require('../middlewares/emails/solicitudMaterial.email')
 const { FAL004 } = require('../middlewares/docs/FAL-004.pdf');
 const { NotaSalida } = require('../middlewares/docs/traslado.pdf');
-const { NuevoTraslado } = require('../middlewares/emails/traslados.email')
+const { NuevoTraslado } = require('../middlewares/emails/traslados.email');
+const { Query } = require('mongoose');
 const app = express();
+
+app.get('/api/reportes/consumo-materiales-simple', async (req, res) => {
+    try {
+        const from = new Date(req.query.from);
+        const to = new Date(req.query.to);
+
+        const resultado = {};
+
+        /* ================= ASIGNACIONES ================= */
+        const asignaciones = await Lote.find({
+            fecha: { $gte: from, $lte: to }
+        })
+            .populate({
+                path: "material.material",
+                populate: { path: "grupo" }
+            })
+            .lean();
+
+        for (const a of asignaciones) {
+            for (const m of a.material) {
+
+                if (m.fecha < from || m.fecha > to) continue;
+
+                const mat = m.material;
+                if (!mat) continue;
+
+                const key = [
+                    mat.grupo?.nombre,
+                    mat.nombre,
+                    mat.marca,
+                    mat.calibre,
+                    mat.gramaje,
+                    mat.ancho,
+                    mat.largo
+                ].join("|");
+
+                if (!resultado[key]) {
+                    resultado[key] = {
+                        grupo: mat.grupo?.nombre || "SIN_GRUPO",
+                        nombre: mat.nombre,
+                        marca: mat.marca,
+                        calibre: mat.calibre,
+                        gramaje: mat.gramaje,
+                        ancho: mat.ancho,
+                        largo: mat.largo,
+
+                        asignado: 0,
+                        devuelto: 0,
+
+                        asignado_normal: 0,
+                        asignado_otro_material: 0,
+
+                        devuelto_normal: 0,
+                        devuelto_otro_material: 0,
+
+                        asignacion: new Set()
+                    };
+                }
+
+                const cantidad = Number(m.cantidad) || 0;
+
+                resultado[key].asignado += cantidad;
+
+                if (a.orden === "#") {
+                    resultado[key].asignado_otro_material += cantidad;
+                } else {
+                    resultado[key].asignado_normal += cantidad;
+                }
+
+                if (a.asignacion || a.orden) {
+                    resultado[key].asignacion.add(
+                        `${a.asignacion ?? "?"}, ${a.orden ?? "?"}`
+                    );
+                }
+            }
+        }
+
+        /* ================= DEVOLUCIONES ================= */
+        const devoluciones = await Devolucion.find({
+            status: "Culminado",
+            fecha: { $gte: from, $lte: to }
+        })
+            .populate({
+                path: "filtrado.material",
+                populate: { path: "grupo" }
+            })
+            .lean();
+
+        for (const d of devoluciones) {
+            for (const f of d.filtrado) {
+
+                const mat = f.material;
+                if (!mat) continue;
+
+                const key = [
+                    mat.grupo?.nombre,
+                    mat.nombre,
+                    mat.marca,
+                    mat.calibre,
+                    mat.gramaje,
+                    mat.ancho,
+                    mat.largo
+                ].join("|");
+
+                if (!resultado[key]) {
+                    resultado[key] = {
+                        grupo: mat.grupo?.nombre || "SIN_GRUPO",
+                        nombre: mat.nombre,
+                        marca: mat.marca,
+                        calibre: mat.calibre,
+                        gramaje: mat.gramaje,
+                        ancho: mat.ancho,
+                        largo: mat.largo,
+
+                        asignado: 0,
+                        devuelto: 0,
+
+                        asignado_normal: 0,
+                        asignado_otro_material: 0,
+
+                        devuelto_normal: 0,
+                        devuelto_otro_material: 0,
+
+                        asignacion: new Set()
+                    };
+                }
+
+                const cantidadDev = Number(f.cantidad) || 0;
+
+                resultado[key].devuelto += cantidadDev;
+
+                if (d.orden === "#") {
+                    resultado[key].devuelto_otro_material += cantidadDev;
+                } else {
+                    resultado[key].devuelto_normal += cantidadDev;
+                }
+
+                if (d.orden) {
+                    resultado[key].asignacion.add(`DEV, ${d.orden}`);
+                }
+            }
+        }
+
+        /* ================= AGRUPAR POR GRUPO ================= */
+        const porGrupo = {};
+
+        for (const item of Object.values(resultado)) {
+
+            if (!porGrupo[item.grupo]) {
+                porGrupo[item.grupo] = {
+                    grupo: item.grupo,
+
+                    totalAsignado: 0,
+                    totalDevuelto: 0,
+                    totalConsumido: 0,
+
+                    totalAsignadoNormal: 0,
+                    totalAsignadoOtroMaterial: 0,
+
+                    totalDevueltoNormal: 0,
+                    totalDevueltoOtroMaterial: 0,
+
+                    materiales: []
+                };
+            }
+
+            const consumido = item.asignado - item.devuelto;
+
+            porGrupo[item.grupo].materiales.push({
+                nombre: item.nombre,
+                marca: item.marca,
+                calibre: item.calibre,
+                gramaje: item.gramaje,
+                ancho: item.ancho,
+                largo: item.largo,
+
+                asignado: item.asignado,
+                devuelto: item.devuelto,
+                totalConsumido: consumido,
+
+                asignado_normal: item.asignado_normal,
+                asignado_otro_material: item.asignado_otro_material,
+
+                devuelto_normal: item.devuelto_normal,
+                devuelto_otro_material: item.devuelto_otro_material,
+
+                asignacion: Array.from(item.asignacion)
+            });
+
+            porGrupo[item.grupo].totalAsignado += item.asignado;
+            porGrupo[item.grupo].totalDevuelto += item.devuelto;
+            porGrupo[item.grupo].totalConsumido += consumido;
+
+            porGrupo[item.grupo].totalAsignadoNormal += item.asignado_normal;
+            porGrupo[item.grupo].totalAsignadoOtroMaterial += item.asignado_otro_material;
+
+            porGrupo[item.grupo].totalDevueltoNormal += item.devuelto_normal;
+            porGrupo[item.grupo].totalDevueltoOtroMaterial += item.devuelto_otro_material;
+        }
+
+        res.json(Object.values(porGrupo));
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Error generando reporte" });
+    }
+});
+
+
+
+
+
+
 
 app.get('/api/lotes/:orden', (req, res) => {
     let orden = req.params.orden;
@@ -628,39 +843,50 @@ app.get('/api/tipo-materia-prima', (req, res) => {
 
 app.get('/api/materiales', async (req, res) => {
     try {
-        // Buscar materiales
+        // 1. Buscar todos los materiales (igual que antes)
         let materialesDB = await Material.find({
             eliminado: false,
-            // nombre: { $not: /\*$/ } // No termina en asterisco
+            // nombre: { $not: /\*$/ }
         })
             .populate('grupo')
             .sort('grupo.nombre')
             .sort('nombre')
             .exec();
 
-        // Recorrer cada material y buscar último precio distinto de 0
-        for (let material of materialesDB) {
-            let ultimoRegistro = await Almacenado.findOne({
-                "material": material._id,
-                "precio": { $ne: 0 }
-            })
-                .sort({ fecha: -1 }) // Suponiendo que tienes un campo 'fecha' o 'createdAt'
-                .exec();
+        // 2. Obtener todos los IDs de materiales
+        const materialIds = materialesDB.map(m => m._id);
 
-            // Agregar propiedad 'ultimoPrecio' al material
-            material = material.toObject(); // Para poder añadir keys sin problemas
-            material.ultimoPrecio = ultimoRegistro ? ultimoRegistro.precio : 0;
+        // 3. OBTENER TODOS los registros de Almacenado de una sola vez
+        // Esto sigue siendo ineficiente si tienes millones de registros, pero es una sola consulta grande.
+        let todosLosRegistros = await Almacenado.find({
+            material: { $in: materialIds },
+            precio: { $ne: 0 }
+        }).sort({ fecha: -1 }).exec(); // Ordenamos por fecha descendente globalmente
 
-            // Reemplazar en el array
-            materialesDB[materialesDB.findIndex(m => m._id.equals(material._id))] = material;
-        }
+        // 4. Procesar en memoria con .map() (MUCHO más rápido que el for...of con awaits)
+        let materialesConPrecio = materialesDB.map(material => {
+            // Busca el primer registro válido que coincida con este material ID específico
+            const ultimoRegistro = todosLosRegistros.find(registro =>
+                registro.material.equals(material._id)
+            );
+
+            // Convertir a Object y añadir la propiedad (igual que tu código original)
+            let materialObj = material.toObject();
+            materialObj.ultimoPrecio = ultimoRegistro ? ultimoRegistro.precio : 0;
+
+            return materialObj;
+        });
+
+        // NOTA: El ordenamiento original de mongoose.sort() se pierde un poco con .map() y .toObject(), 
+        // pero la estructura de la respuesta es idéntica.
 
         res.json({
             ok: true,
-            materiales: materialesDB
+            materiales: materialesConPrecio
         });
 
     } catch (err) {
+        // ... manejo de errores ...
         res.status(400).json({
             ok: false,
             err
@@ -1645,6 +1871,125 @@ app.post('/api/materialess/reporte', (req, res) => {
 
         })
 })
+
+app.get('/api/Almacen-exterior-nuevo', async (req, res) => {
+
+    Almacen = await almacenadoExterno.find({ cantidad: { $gt: 0 } })
+        .populate('material', 'nombre marca gramaje calibre ancho largo grupo fecha').lean();
+
+    const porGrupo = Almacen.reduce((acc, item) => {
+        const grupo = item.almacen ?? 'SIN_GRUPO';
+        (acc[grupo] ||= []).push(item);
+        return acc;
+    }, {});
+
+    res.json(porGrupo)
+})
+
+
+app.get('/api/materiales-registrados', async (req, res) => {
+    try {
+        const materiales = await Material.find({
+            eliminado: false,
+            nombre: { $not: { $regex: /\*/ } }
+        })
+            .sort('nombre')
+            .lean();
+
+        const porGrupo = materiales.reduce((acc, item) => {
+            const grupo = item.grupo ?? 'SIN_GRUPO';
+            (acc[grupo] ||= []).push(item);
+            return acc;
+        }, {});
+
+        res.json(porGrupo);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Error interno' });
+    }
+});
+
+
+app.get('/api/almacen-poligrafica', async (req, res) => {
+    try {
+
+        Almacen = await Almacenado.find({
+            $and: [{ cantidad: { $gt: 0 } },
+            { cantidad: { $ne: '0.00' } },
+            { fuera: { $ne: true } }]
+        })
+            .populate('material', 'nombre marca gramaje calibre ancho largo grupo fecha').lean();
+
+        const porGrupo = Almacen.reduce((acc, item) => {
+            const grupo = item.material?.grupo ?? 'SIN_GRUPO';
+            (acc[grupo] ||= []).push(item);
+            return acc;
+        }, {});
+
+        // Query #2: requisiciones con status "lista"
+        const totalRequisiciones = await Requisicion.countDocuments({
+            estado: 'lista',
+            borrado: { $ne: true }
+        });
+
+        //Query #3: Ordenes por asignar
+        const totalOrdenesPorAsignar = await Orden.countDocuments({
+            estado: 'Espera'
+        });
+
+        // Query #2: requisiciones con status "lista"
+        const RequisicionesPorAprobar = await Requisicion.countDocuments({
+            estado: 'Espera',
+            borrado: { $ne: true }
+        });
+
+        const DevolucionesPendientes = await Devolucion.countDocuments({
+            status: 'Pendiente'
+        })
+
+        const TrasladosPendientes = await traslados.countDocuments({
+            estatus: 'Por confirmar'
+        })
+
+        // // Query #4: Solicitud de Repuestos
+        // const repuestosolicitud = await RepuestoSolicitud.find({ estado: 'Espera' })
+        //     .populate('repuestos.repuesto')
+        //     .populate({ path: 'repuestos.repuesto', populate: { path: 'maquina' } })
+        //     .populate({ path: 'repuestos.repuesto', populate: { path: 'categoria' } })
+        //     .lean();
+
+        // // Query #5: Materiales registrados
+        // const MaterialesRegistrados = await Material.find({ eliminado: false })
+        //     .populate('grupo')
+        //     .sort('grupo.nombre')
+        //     .sort('nombre')
+        //     .lean();
+
+        // Query #6: grupos de materiales
+        const GruposMateriales = await Materia.find().lean();
+
+        res.status(200).json({
+            ok: true,
+            Almacen: porGrupo,
+            requisiciones: totalRequisiciones,
+            orden: totalOrdenesPorAsignar,
+            espera: RequisicionesPorAprobar,
+            devoluciones: DevolucionesPendientes,
+            traslados: TrasladosPendientes,
+            // repuestos: repuestosolicitud,
+            // materiales: MaterialesRegistrados,
+            grupos: GruposMateriales
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            ok: false,
+            msg: 'Ocurrió un error al buscar los productos.',
+            error: error.message
+        });
+    }
+});
 
 
 

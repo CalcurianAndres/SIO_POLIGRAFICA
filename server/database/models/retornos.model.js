@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const mongologger = require('../../middlewares/mongologger');
 
 let Schema = mongoose.Schema;
 
@@ -10,20 +11,20 @@ const retornosSchema = new Schema({
   numero: {
     type: String,
   },
-  estatus:{
-    type:String,
-    default:'Por confirmar'
+  estatus: {
+    type: String,
+    default: 'Por confirmar'
   },
-  material:{
-    nombre:  {type:String},
-    marca: {type:String},
-    ancho: {type:String},
-    largo: {type:String},
-    calibre:  {type:String},
-    gramaje:  {type:String},
+  material: {
+    nombre: { type: String },
+    marca: { type: String },
+    ancho: { type: String },
+    largo: { type: String },
+    calibre: { type: String },
+    gramaje: { type: String },
   },
   cantidad: {
-    type:Number
+    type: Number
   },
   observacion: {
     type: String
@@ -37,5 +38,7 @@ const retornosSchema = new Schema({
     default: false
   }
 }, { timestamps: true });
+
+retornosSchema.plugin(mongologger());
 
 module.exports = mongoose.model('retornos', retornosSchema);

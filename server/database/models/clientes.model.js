@@ -1,35 +1,40 @@
 const mongoose = require('mongoose');
+const mongologger = require('../../middlewares/mongologger');
 
 let Schema = mongoose.Schema;
 
 let ClienteSchema = new Schema([{
 
-    nombre:{
-        type:String,
-        required:true
+    nombre: {
+        type: String,
+        required: true
     },
-    codigo:{
-        type:String,
-        required:true
+    codigo: {
+        type: String,
+        required: true
     },
-    almacenes:{
-        type:Array,
+    almacenes: {
+        type: Array,
     },
-    rif:{
-        type:String
+    rif: {
+        type: String
     },
-    direccion:{
-        type:String
+    direccion: {
+        type: String
     },
-    contactos:{
-        type:Array
+    contactos: {
+        type: Array
     },
-    fecha:{
-        type:Date,
-        default:Date.now
+    fecha: {
+        type: Date,
+        default: Date.now
     }
 
-}]);
+}], {
+    timestamps: true
+});
+
+ClienteSchema.plugin(mongologger());
 
 
 module.exports = mongoose.model('cliente', ClienteSchema)

@@ -1,42 +1,48 @@
 const mongoose = require('mongoose');
+const mongoLogger = require('../../middlewares/mongologger');
+
 
 let Schema = mongoose.Schema;
 
-let AlmacenadoSchema = new Schema([{
+let AlmacenadoSchema = new Schema({
 
-    material:{
-        type:Schema.Types.ObjectId,
+    material: {
+        type: Schema.Types.ObjectId,
         ref: 'material'
     },
-    codigo:{
-        type:String
+    codigo: {
+        type: String
     },
-    lote:{
-        type:String,
-        required:true
+    lote: {
+        type: String,
+        required: true
     },
-    cantidad:{
-        type:String,
-        required:true
+    cantidad: {
+        type: String,
+        required: true
     },
-    pedido:{
-        type:String,
-    }, 
-    precio:{
-        type:Number
+    pedido: {
+        type: String,
     },
-    fecha:{
-        type:Date,
-        default:Date.now
+    precio: {
+        type: Number
     },
-    almacen:{
-        type:String
+    fecha: {
+        type: Date,
+        default: Date.now
     },
-    observacion:{
-        type:String
+    almacen: {
+        type: String
+    },
+    observacion: {
+        type: String
     }
 
-}]);
+}, {
+    timestamps: true
+});
+
+AlmacenadoSchema.plugin(mongoLogger());
 
 
 module.exports = mongoose.model('almacenadoExterno', AlmacenadoSchema)

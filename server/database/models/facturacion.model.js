@@ -1,56 +1,61 @@
 const mongoose = require('mongoose');
+const mongologger = require('../../middlewares/mongologger');
 
 let Schema = mongoose.Schema;
 
 
 let FacturacionSchema = new Schema([{
-    status:{
-        type:String,
-        default:'Por notificar'
+    status: {
+        type: String,
+        default: 'Por notificar'
     },
-    factura:{
-        type:String,
-        required:true
+    factura: {
+        type: String,
+        required: true
     },
-    orden:{
-        type:String,
+    orden: {
+        type: String,
     },
-    recepcion:{
-        type:String,
+    recepcion: {
+        type: String,
     },
-    transportista:{
-        type:String,
+    transportista: {
+        type: String,
     },
-    productos:[
-            {
-                material:{type:Schema.Types.ObjectId,ref: 'materiales'},
-                nombre:{type:String,},
-                marca:{type:String,},
-                fabricacion:{type:String,},
-                capacidad:{type:String,},
-                lote:{type:String,},
-                numero:{type:String,}
-            }
+    productos: [
+        {
+            material: { type: Schema.Types.ObjectId, ref: 'materiales' },
+            nombre: { type: String, },
+            marca: { type: String, },
+            fabricacion: { type: String, },
+            capacidad: { type: String, },
+            lote: { type: String, },
+            numero: { type: String, }
+        }
     ],
-    totales:{
-        type:Array,
+    totales: {
+        type: Array,
     },
-    condicion:{
-        type:Array,
+    condicion: {
+        type: Array,
     },
-    proveedor:{
-        type:Schema.Types.ObjectId,
+    proveedor: {
+        type: Schema.Types.ObjectId,
         ref: 'proveedor'
     },
-    observacion:{
-        type:String,
+    observacion: {
+        type: String,
     },
-    usuario:{
-        type:String,
+    usuario: {
+        type: String,
     },
-    creacion:{
-        type:String,
+    creacion: {
+        type: String,
     }
 
-}])
+}], {
+    timestamps: true
+});
+
+FacturacionSchema.plugin(mongologger());
 module.exports = mongoose.model('facturacion', FacturacionSchema)

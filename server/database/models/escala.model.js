@@ -1,34 +1,39 @@
 const mongoose = require('mongoose');
+const mongologger = require('../../middlewares/mongologger');
 
 let Schema = mongoose.Schema;
 
 let EscalaSchema = new Schema([{
 
-    producto:{
-        type:Schema.Types.ObjectId,
+    producto: {
+        type: Schema.Types.ObjectId,
         ref: 'producto'
     },
-    descripcion:{
-        type:String,
-        required:true
+    descripcion: {
+        type: String,
+        required: true
     },
-    montaje:{
-        type:Number,
-        required:true
+    montaje: {
+        type: Number,
+        required: true
     },
-    escalas:{
-        type:Array,
+    escalas: {
+        type: Array,
     },
-    cliente:{
-        type:Schema.Types.ObjectId,
-        ref: 'producto' 
+    cliente: {
+        type: Schema.Types.ObjectId,
+        ref: 'producto'
     },
-    fecha:{
-        type:Date,
-        default:Date.now
+    fecha: {
+        type: Date,
+        default: Date.now
     }
 
-}]);
+}], {
+    timestamps: true
+});
+
+EscalaSchema.plugin(mongologger());
 
 
 module.exports = mongoose.model('escala', EscalaSchema)

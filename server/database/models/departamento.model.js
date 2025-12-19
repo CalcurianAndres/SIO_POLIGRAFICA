@@ -1,21 +1,26 @@
 const mongoose = require('mongoose');
+const mongologger = require('../../middlewares/mongologger');
 
 let Schema = mongoose.Schema;
 
 let DepartamentoSchema = new Schema([{
 
-    fecha:{
-        type:Date,
-        default:Date.now
+    fecha: {
+        type: Date,
+        default: Date.now
     },
-    departamento:{
-        type:String
+    departamento: {
+        type: String
     },
-    roles:{
-        type:Array
+    roles: {
+        type: Array
     },
 
-}]);
+}], {
+    timestamps: true
+});
+
+DepartamentoSchema.plugin(mongologger());
 
 
 module.exports = mongoose.model('departamento', DepartamentoSchema)
