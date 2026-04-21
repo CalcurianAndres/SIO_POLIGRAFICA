@@ -17,6 +17,8 @@ const almacenadoExterno = require('../database/models/almacenadoExterno');
 const traslados = require('../database/models/traslados.model');
 const retorno = require('../database/models/retornos.model')
 const RepuestoSolicitud = require('../database/models/partesr.model');
+const InventarioSnapshot = require('../database/models/almacenSnapshot.model');
+const ExcelJS = require('exceljs');
 
 const moment = require('moment');
 
@@ -34,6 +36,348 @@ const { NotaSalida } = require('../middlewares/docs/traslado.pdf');
 const { NuevoTraslado } = require('../middlewares/emails/traslados.email');
 const { Query } = require('mongoose');
 const app = express();
+
+app.get('/api/snapshot/excel-comparativa/:id', async (req, res) => {
+    try {
+        // 1. OBTENER DATOS (Misma lógica que tu ruta de comparación)
+        const snapshot = await InventarioSnapshot.findById(req.params.id);
+        if (!snapshot) return res.status(404).json({ ok: false, message: 'No se encontró el snapshot.' });
+
+        const stockActual = await Almacenado.find({ fuera: false }).populate('material');
+
+        const consolidadoMap = {};
+
+        // Función para procesar y sumar al mapa (evitamos repetir código)
+        const procesarItem = (item, cantidadAntes, cantidadHoy) => {
+            const llaveTecnica = `${item.materialId || item.material?._id}-${item.marca || item.material?.marca}-${item.gramaje || item.material?.gramaje}-${item.calibre || item.material?.calibre}-${item.ancho || item.material?.ancho}-${item.largo || item.material?.largo}`;
+
+            if (!consolidadoMap[llaveTecnica]) {
+                // LÓGICA DE NOMBRE "DIABLO" (Concatenación limpia)
+                const m = item.material || item; // Manejo si viene de snapshot o de populate
+                const nombreBase = m.nombreMaterial || m.nombre || m.descripcion || 'Sin nombre';
+                const marca = m.marca || 'S/M';
+
+                let nombreCompleto = nombreBase;
+                if (m.ancho && m.largo && m.gramaje && m.calibre) {
+                    const ficha = `(${m.ancho} x ${m.largo}) ${m.gramaje}g/m² ${m.calibre} pt`;
+                    nombreCompleto = `${nombreBase} ${ficha}`;
+                }
+
+                consolidadoMap[llaveTecnica] = {
+                    nombreDisplay: nombreCompleto,
+                    marca: marca,
+                    antes: 0,
+                    hoy: 0
+                };
+            }
+            consolidadoMap[llaveTecnica].antes += cantidadAntes;
+            consolidadoMap[llaveTecnica].hoy += cantidadHoy;
+        };
+
+        // Procesar lo que había en el snapshot
+        snapshot.items.forEach(p => {
+            const itemHoy = stockActual.find(a => a.codigo === p.codigo && a.lote === p.lote);
+            const hoy = itemHoy ? (parseFloat(itemHoy.cantidad) || 0) : 0;
+            procesarItem(p, parseFloat(p.cantidad) || 0, hoy);
+        });
+
+        // Procesar ingresos nuevos (lo que no estaba en el snapshot pero existe hoy)
+        stockActual.filter(a =>
+            !snapshot.items.some(p => p.codigo === a.codigo && p.lote === a.lote) && parseFloat(a.cantidad) > 0
+        ).forEach(n => {
+            procesarItem(n, 0, parseFloat(n.cantidad) || 0);
+        });
+
+        const datosFinales = Object.values(consolidadoMap);
+
+        // 2. CREAR EXCEL "PREMIUM"
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet('Auditoría de Inventario');
+
+        // Estilos de colores
+        const azulOscuro = 'FF2C3E50';
+        const blanco = 'FFFFFFFF';
+        const grisClaro = 'FFF2F4F4';
+
+        // Título del Reporte
+        worksheet.mergeCells('A1:E1');
+        const title = worksheet.getCell('A1');
+        title.value = `AUDITORÍA: ${snapshot.etiqueta}`;
+        title.font = { name: 'Arial Black', size: 14, color: { argb: blanco } };
+        title.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: azulOscuro } };
+        title.alignment = { vertical: 'middle', horizontal: 'center' };
+        worksheet.getRow(1).height = 35;
+
+        // Encabezados
+        const headerRow = worksheet.getRow(3);
+        headerRow.values = ['MATERIAL Y ESPECIFICACIÓN TÉCNICA', 'MARCA', 'CANT. ANTES', 'CANT. HOY', 'DIFERENCIA'];
+
+        headerRow.eachCell((cell) => {
+            cell.font = { bold: true, color: { argb: blanco }, size: 11 };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF34495E' } };
+            cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            cell.border = { outline: true, style: 'thin' };
+        });
+
+        // 3. INSERTAR DATOS
+        datosFinales.forEach((item, index) => {
+            const diferencia = item.hoy - item.antes;
+            const row = worksheet.addRow([
+                item.nombreDisplay,
+                item.marca,
+                item.antes,
+                item.hoy,
+                diferencia
+            ]);
+
+            // Formato numérico
+            row.getCell(3).numFmt = '#,##0.00';
+            row.getCell(4).numFmt = '#,##0.00';
+            row.getCell(5).numFmt = '#,##0.00';
+
+            // Color condicional para la diferencia
+            const diffCell = row.getCell(5);
+            if (diferencia < 0) {
+                diffCell.font = { color: { argb: 'FFFF0000' }, bold: true }; // Rojo
+            } else if (diferencia > 0) {
+                diffCell.font = { color: { argb: 'FF00B050' }, bold: true }; // Verde
+            }
+
+            // Zebra Striping
+            if (index % 2 === 0) {
+                row.eachCell(c => {
+                    c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: grisClaro } };
+                });
+            }
+        });
+
+        // 4. DISEÑO FINAL
+        worksheet.getColumn(1).width = 80; // Descripción técnica larga
+        worksheet.getColumn(2).width = 15; // Marca
+        worksheet.getColumn(3).width = 15; // Antes
+        worksheet.getColumn(4).width = 15; // Hoy
+        worksheet.getColumn(5).width = 15; // Diferencia
+
+        worksheet.autoFilter = 'A3:E3';
+
+        // 5. CABECERAS DE RESPUESTA (FIX ERR_RESPONSE_HEADERS)
+        const fileName = `AUDITORIA_${snapshot.etiqueta}.xlsx`.replace(/[/\\?%*:|"<>]/g, '-');
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(fileName)}"`);
+
+        await workbook.xlsx.write(res);
+        res.end();
+
+    } catch (error) {
+        console.error('ERROR EXCEL AUDITORÍA:', error);
+        res.status(500).send('Error al generar auditoría');
+    }
+});
+
+app.get('/api/comparar-stock/:id', async (req, res) => {
+    try {
+        const snapshot = await InventarioSnapshot.findById(req.params.id);
+        if (!snapshot) return res.status(404).json({ ok: false, message: 'No se encontró el snapshot.' });
+
+        // Traemos el stock actual con los campos técnicos necesarios
+        const stockActual = await Almacenado.find({ fuera: false }).populate('material');
+
+        // 1. PROCESAR DETALLADO (Igual que antes, pero extraemos más campos)
+        const detallado = snapshot.items.map(itemPasado => {
+            const itemHoy = stockActual.find(a => a.codigo === itemPasado.codigo && a.lote === itemPasado.lote);
+            const antes = parseFloat(itemPasado.cantidad) || 0;
+            const hoy = itemHoy ? (parseFloat(itemHoy.cantidad) || 0) : 0;
+
+            return {
+                materialId: itemPasado.materialId,
+                nombre: itemPasado.nombreMaterial,
+                marca: itemPasado.marca || 'S/M', // Asegúrate de que estos campos existan en el snapshot
+                gramaje: itemPasado.gramaje || '',
+                calibre: itemPasado.calibre || '',
+                ancho: itemPasado.ancho || '',
+                largo: itemPasado.largo || '',
+                codigo: itemPasado.codigo,
+                lote: itemPasado.lote,
+                antes,
+                hoy,
+                diferencia: hoy - antes
+            };
+        });
+
+        // (Sumamos los nuevos ingresos al detallado)
+        const nuevos = stockActual.filter(a =>
+            !snapshot.items.some(p => p.codigo === a.codigo && p.lote === a.lote) && parseFloat(a.cantidad) > 0
+        ).map(n => ({
+            materialId: n.material ? n.material._id : null,
+            nombre: n.material ? n.material.nombre : 'Nuevo',
+            marca: n.material ? n.material.marca : 'S/M',
+            gramaje: n.material ? n.material.gramaje : '',
+            calibre: n.material ? n.material.calibre : '',
+            ancho: n.material ? n.material.ancho : '',
+            largo: n.material ? n.material.largo : '',
+            codigo: n.codigo,
+            lote: n.lote,
+            antes: 0,
+            hoy: parseFloat(n.cantidad) || 0,
+            diferencia: parseFloat(n.cantidad) || 0
+        }));
+
+        const comparativaDetallada = [...detallado, ...nuevos];
+
+        // 2. PROCESAR CONSOLIDADO CON LÓGICA TÉCNICA
+        const consolidadoMap = {};
+
+        comparativaDetallada.forEach(item => {
+            // CREAMOS UNA LLAVE ÚNICA TÉCNICA: Si cambia el calibre o ancho, es otra fila en el consolidado
+            const llaveTecnica = `${item.materialId}-${item.marca}-${item.gramaje}-${item.calibre}-${item.ancho}-${item.largo}`;
+
+            if (!consolidadoMap[llaveTecnica]) {
+                // Formateamos la descripción técnica: "100 x 70 300g/m2 12pt"
+                const descDimensiones = (item.ancho && item.largo) ? `${item.ancho} x ${item.largo}` : '';
+                const descTecnica = `(${descDimensiones}) ${item.gramaje ? item.gramaje + 'g/m²' : ''} ${item.calibre ? item.calibre + 'pt' : ''}`.trim();
+
+                consolidadoMap[llaveTecnica] = {
+                    llaveLogica: llaveTecnica,
+                    nombre: item.nombre,
+                    marca: item.marca,
+                    especificaciones: descTecnica || 'N/A',
+                    totalAntes: 0,
+                    totalHoy: 0,
+                    totalDiferencia: 0
+                };
+            }
+
+            consolidadoMap[llaveTecnica].totalAntes += item.antes;
+            consolidadoMap[llaveTecnica].totalHoy += item.hoy;
+            consolidadoMap[llaveTecnica].totalDiferencia += item.diferencia;
+        });
+
+        res.json({
+            ok: true,
+            infoCorte: { fecha: snapshot.fechaCorte, etiqueta: snapshot.etiqueta },
+            comparativaConsolidada: Object.values(consolidadoMap),
+            comparativaDetallada
+        });
+
+    } catch (error) {
+        res.status(500).json({ ok: false, error: error.message });
+    }
+});
+
+app.get('/api/snapshot', async (req, res) => {
+    try {
+        console.log("Generando Snapshot con especificaciones técnicas...");
+
+        // 1. Buscar registros con stock activo
+        const itemsConStock = await Almacenado.find({
+            cantidad: { $nin: ["0", 0, "", "0.00"] },
+            fuera: false
+        }).populate('material');
+
+        if (!itemsConStock || itemsConStock.length === 0) {
+            return res.status(404).json({
+                ok: false,
+                message: 'No hay productos con existencia para guardar.'
+            });
+        }
+
+        // 2. Mapear datos (Se mantiene igual)
+        let valorAcumulado = 0;
+        const itemsParaGuardar = itemsConStock.map(item => {
+            const precioRef = Number(item.precio) || 0;
+            const cantidadRef = parseFloat(item.cantidad) || 0;
+            valorAcumulado += (precioRef * cantidadRef);
+            const m = item.material || {};
+
+            return {
+                materialId: m._id || null,
+                nombreMaterial: m.nombre || m.descripcion || 'Sin nombre',
+                marca: m.marca || 'S/M',
+                gramaje: m.gramaje || '',
+                calibre: m.calibre || '',
+                ancho: m.ancho || '',
+                largo: m.largo || '',
+                codigo: item.codigo,
+                lote: item.lote,
+                cantidad: item.cantidad,
+                precio: precioRef,
+                pedido: item.pedido
+            };
+        });
+
+        // --- 3. AJUSTE DE ETIQUETA CON PARÁMETRO, FECHA Y HORA ---
+        const ahora = new Date();
+        const fechaFormateada = ahora.toLocaleDateString('es-ES'); // ej: 14/04/2026
+        const horaFormateada = ahora.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }); // ej: 11:45
+
+        // Buscamos 'etiqueta' en req.query porque en GET los params viajan ahí
+        const paramEtiqueta = req.query.etiqueta || 'Corte Manual';
+        const etiquetaFinal = `${paramEtiqueta} - ${fechaFormateada} - ${horaFormateada}`;
+
+        const nuevoSnapshot = new InventarioSnapshot({
+            etiqueta: etiquetaFinal,
+            items: itemsParaGuardar,
+            totales: {
+                totalItems: itemsParaGuardar.length,
+                valorTotal: valorAcumulado.toFixed(2)
+            }
+        });
+
+        // 4. Guardar
+        const snapshotGuardado = await nuevoSnapshot.save();
+
+        res.status(201).json({
+            ok: true,
+            message: 'Snapshot técnico guardado correctamente',
+            snapshot: snapshotGuardado
+        });
+
+    } catch (error) {
+        console.error('ERROR AL GENERAR SNAPSHOT:', error);
+        res.status(500).json({
+            ok: false,
+            message: 'Error interno del servidor',
+            error: error.message
+        });
+    }
+});
+
+
+/**
+ * @route   GET /api/almacenado/snapshot-list
+ * @desc    Obtiene el historial de cortes realizados (Versión ligera para selectores)
+ */
+app.get('/api/snapshot-list', async (req, res) => {
+    try {
+        // Usamos .select() para traer solo los campos necesarios.
+        // El signo '-' delante de un campo (ej: -items) lo excluye explícitamente.
+        const historico = await InventarioSnapshot.find()
+            .select('fechaCorte etiqueta totales')
+            .sort({ fechaCorte: -1 }); // Ordenar: El más reciente primero
+
+        if (!historico || historico.length === 0) {
+            return res.status(200).json({
+                ok: true,
+                message: 'No hay registros de snapshots aún.',
+                historico: []
+            });
+        }
+
+        res.json({
+            ok: true,
+            count: historico.length,
+            historico
+        });
+
+    } catch (error) {
+        console.error('Error al obtener lista de snapshots:', error);
+        res.status(500).json({
+            ok: false,
+            message: 'Error al consultar el histórico',
+            error: error.message
+        });
+    }
+});
 
 app.get('/api/reportes/consumo-materiales-simple', async (req, res) => {
     try {

@@ -44,7 +44,7 @@ app.post('/api/requi', (req, res) => {
 app.get('/api/requi', (req, res) => {
     Requisicion.find({ estado: 'lista' })
         .populate('producto.materiales.producto')
-        // .populate({ path: 'producto', populate: { path: 'materiales.producto', populate: { path: 'grupo' } } })
+        .populate({ path: 'producto', populate: { path: 'materiales.producto', populate: { path: 'grupo' } } })
         .exec((err, requi) => {
             if (err) {
                 return res.status(400).json({
@@ -60,6 +60,7 @@ app.get('/api/requi', (req, res) => {
 app.get('/api/requi/espera', (req, res) => {
     Requisicion.find({ estado: 'Espera' })
         .populate('producto.materiales.producto')
+        .populate({ path: 'producto', populate: { path: 'materiales.producto', populate: { path: 'grupo' } } })
         .exec((err, requi) => {
             if (err) {
                 return res.status(400).json({

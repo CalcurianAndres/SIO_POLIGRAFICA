@@ -29,18 +29,42 @@ app.get('/api/despachos-cliente/:cliente/:desde/:hasta', async (req, res) => {
         let { cliente, desde, hasta } = req.params;
 
         console.log('Cliente:', cliente, 'Desde:', desde, 'Hasta:', hasta);
-
-        // 📅 Normalizo formato de fechas (asegurando uso de YYYY-MM-DD correcto)
-        const desdeMoment = moment(desde, "YYYY-MM-DD");
-        const hastaMoment = moment(hasta, "YYYY-MM-DD");
-
-        // 📦 Array para ir acumulando todos los despachos filtrados
         const Despachos__ = [];
 
-        // 🧠 Busco todos los despachos (más adelante se podría optimizar con filtros de fecha global)
-        const Despachado = await Despacho.find({}).lean().exec();
+        // 1. Corregimos el formato de entrada según lo que muestra tu console.log
+        const desdeMoment = moment(desde, "YYYY-MM-DD").startOf('day');
+        const hastaMoment = moment(hasta, "YYYY-MM-DD").endOf('day');
 
-        console.log(`Total documentos de despacho encontrados: ${Despachado.length}`);
+        // 2. Validación de seguridad
+        if (!desdeMoment.isValid() || !hastaMoment.isValid()) {
+            console.error("Formatos de fecha inválidos");
+            // Manejar error aquí
+        }
+
+        // 3. Ejecutamos el Aggregate
+        const Despachado = await Despacho.aggregate([
+            {
+                $addFields: {
+                    fechaConverted: {
+                        $dateFromString: {
+                            dateString: "$fecha",
+                            format: "%d-%m-%Y", // ← ASEGÚRATE que en la DB el string sea "DD-MM-YYYY"
+                            onError: null // Evita que explote si hay un string mal formado
+                        }
+                    }
+                }
+            },
+            {
+                $match: {
+                    fechaConverted: {
+                        $gte: desdeMoment.toDate(),
+                        $lte: hastaMoment.toDate()
+                    }
+                }
+            }
+        ]).exec();
+
+        // console.log(`Total documentos de despacho encontrados: ${Despachado.length}`);
 
         // 🔁 Recorro cada documento principal
         for (const item of Despachado) {
@@ -48,30 +72,27 @@ app.get('/api/despachos-cliente/:cliente/:desde/:hasta', async (req, res) => {
             for (const sub of item.despacho) {
                 // 📅 Determino la fecha de referencia:
                 // si existe "parcial", uso esa; si no, uso la fecha del documento padre.
-                const fechaRef = sub.parcial ? sub.parcial : item.fecha;
-                console.log(`Procesando OP: ${sub.op} con fecha de referencia: ${fechaRef}`);
+                const fechaRef = item.parcial ? item.parcial : item.fecha;
+                // console.log(`Procesando OP: ${sub.op} con fecha de referencia: ${fechaRef}`);
 
                 // Normalizo la fecha para comparación
                 const fechaMoment = moment(fechaRef, "DD-MM-YYYY");
-                console.log(`Fecha normalizada para OP ${sub.op}: ${fechaMoment.format("YYYY-MM-DD")}`);
+                // console.log(`Fecha normalizada para OP ${sub.op}: ${fechaMoment.format("YYYY-MM-DD")}`);
 
-                // ⏱️ Verifico si la fecha está dentro del rango solicitado
-                if (fechaMoment.isSameOrAfter(desdeMoment) && fechaMoment.isSameOrBefore(hastaMoment)) {
-                    console.log(`OP ${sub.op} está dentro del rango de fechas.`);
-                    // 🔍 Busco la Orden relacionada por el campo "op"
-                    const OrdenDB = await Orden.findOne({ sort: sub.op }).lean().exec();
+                // 🔍 Busco la Orden relacionada por el campo "op"
+                const OrdenDB = await Orden.findOne({ sort: sub.op }).lean().exec();
 
-                    // Si hay una Orden y pertenece al cliente indicado
-                    console.log(`Orden encontrada para OP ${sub.op}:`, OrdenDB ? OrdenDB.producto.cliente : 'No encontrada');
-                    if (OrdenDB && OrdenDB.producto.cliente === cliente) {
-                        // ✅ Reutilizo el objeto sub y le asigno la fecha (para mostrar en frontend)
-                        const subCopia = { ...sub };
-                        subCopia.status = fechaRef;
+                // Si hay una Orden y pertenece al cliente indicado
+                // console.log(`Orden encontrada para OP ${sub.op}:`, OrdenDB ? OrdenDB.producto.cliente : 'No encontrada');
+                // console.log(OrdenDB.sort, '<->', cliente, '<->', OrdenDB.cliente);
+                if (OrdenDB.cliente == cliente) {
+                    // ✅ Reutilizo el objeto sub y le asigno la fecha (para mostrar en frontend)
+                    const subCopia = { ...sub };
+                    subCopia.status = fechaRef;
 
-                        // Lo agrego al resultado
-                        Despachos__.push(subCopia);
-                        console.log(`OP ${sub.op} agregada al resultado final.`, Despachos__.length);
-                    }
+                    // Lo agrego al resultado
+                    Despachos__.push(subCopia);
+                    console.log(`OP ${sub.op} agregada al resultado final.`, Despachos__.length);
                 }
             }
         }

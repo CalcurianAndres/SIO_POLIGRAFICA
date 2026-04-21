@@ -349,14 +349,25 @@ app.get('/api/despachos/pre-facturacion', async (req, res) => {
       })
     );
 
-    // Consultar precio del dólar
+
+
+
+    // 2. CORRECCIÓN DE LA TASA
     let MonitorBCV = 0.00;
     try {
-      const response = await axios.get('https://api.dolarvzla.com/public/exchange-rate');
-      console.log('Promedio dolar hoy: ', response.data.current.usd)
-      MonitorBCV = response.data.current.usd || 0;
+      // Usamos la URL de BCV directamente que es más estable y gratuita
+      const response = await axios.get('https://ve.dolarapi.com/v1/dolares');
+
+      // Esta URL devuelve UN solo objeto, no un array
+      if (response.data[0] && response.data[0].promedio) {
+        MonitorBCV = response.data[0].promedio;
+      }
+
+      console.log('Promedio dolar hoy (BCV): ', MonitorBCV);
+
     } catch (error) {
-      console.error(error);
+      console.error("Error al consultar la API:", error.message);
+      // Opcional: Si falla el BCV, puedes intentar con el paralelo
     }
 
     res.json({ preFacuracion, MonitorBCV });

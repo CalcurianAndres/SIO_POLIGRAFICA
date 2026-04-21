@@ -1,4 +1,6 @@
 const express = require('express');
+const mongoose = require('mongoose');
+const ExcelJS = require('exceljs');
 
 const Orden = require('../database/models/orden.model');
 const Trabajo = require('../database/models/trabajos.model');
@@ -573,5 +575,140 @@ app.get('/api/orden/:id', (req, res) => {
 
 });
 
+app.get('/api/ordenes/reporte', async (req, res) => {
+    try {
+        const { cliente, codigo, inicio, fin } = req.query;
+
+        if (!cliente || !codigo || !inicio || !fin) {
+            return res.status(400).json({
+                ok: false,
+                msg: 'cliente, codigo, inicio y fin son obligatorios'
+            });
+        }
+
+        var clienteId = ''
+
+        if (cliente != 'ALL') {
+            clienteId = new mongoose.Types.ObjectId(cliente);
+        }
+
+        const matchOrden =
+            cliente === 'ALL'
+                ? {}
+                : { cliente: clienteId };
+
+        const matchProducto =
+            cliente === 'ALL'
+                ? {} // 👈 no filtrar productos si cliente es ALL
+                : (
+                    codigo === 'ALL'
+                        ? { 'producto.cliente': clienteId }
+                        : { 'producto.cliente': clienteId, 'producto.codigo': codigo }
+                );
+
+        const data = await ordendecompra.aggregate([
+            // 1️⃣ filtrar OC por cliente
+            {
+                $match: matchOrden
+            },
+
+            // 2️⃣ separar productos
+            { $unwind: '$productos' },
+
+            // 3️⃣ rango de fechas
+            {
+                $match: {
+                    'productos.fecha': {
+                        $gte: inicio,
+                        $lte: fin
+                    }
+                }
+            },
+
+            // 4️⃣ traer producto (versiones)
+            {
+                $lookup: {
+                    from: 'productos',
+                    localField: 'productos.producto',
+                    foreignField: '_id',
+                    as: 'producto'
+                }
+            },
+            { $unwind: '$producto' },
+
+            // 5️⃣ filtrar por codigo (ya sabemos que es del cliente correcto)
+            {
+                $match: matchProducto
+            },
+
+            // 6️⃣ traer cliente (solo para mostrar nombre)
+            {
+                $lookup: {
+                    from: 'clientes',
+                    localField: 'cliente',
+                    foreignField: '_id',
+                    as: 'cliente'
+                }
+            },
+            { $unwind: '$cliente' },
+
+            // 7️⃣ salida final
+            {
+                $project: {
+                    _id: 0,
+                    orden_compra: '$orden',
+                    cliente: '$cliente.nombre',
+                    producto: '$producto.producto',
+                    version: '$producto.version',
+                    codigo: '$producto.codigo',
+                    cantidad: { $toInt: '$productos.cantidad' },
+                    fecha: {
+                        $dateFromString: {
+                            dateString: '$productos.fecha'
+                        }
+                    }
+                }
+            },
+
+            // 8️⃣ ordenar por fecha
+            { $sort: { fecha: 1 } }
+        ]);
+
+        // 🧠 Crear Excel
+        const workbook = new ExcelJS.Workbook();
+        const sheet = workbook.addWorksheet('Reporte OC');
+
+        sheet.columns = [
+            { header: 'Orden de Compra', key: 'orden_compra', width: 20 },
+            { header: 'Cliente', key: 'cliente', width: 30 },
+            { header: 'Producto', key: 'producto', width: 30 },
+            { header: 'Cantidad', key: 'cantidad', width: 15, style: { numFmt: '#,##0' } },
+            { header: 'Fecha', key: 'fecha', width: 15, style: { numFmt: 'dd/mm/yyyy' } }
+        ];
+
+        data.forEach(row => sheet.addRow(row));
+
+        sheet.getRow(1).font = { bold: true };
+
+        res.setHeader(
+            'Content-Type',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        );
+        res.setHeader(
+            'Content-Disposition',
+            'attachment; filename=reporte_oc.xlsx'
+        );
+
+        await workbook.xlsx.write(res);
+        res.end();
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            ok: false,
+            msg: 'Error generando reporte'
+        });
+    }
+});
 
 module.exports = app;

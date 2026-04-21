@@ -1,9 +1,13 @@
 (function () {
-  function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+  function _classCallCheck(a, n) { if (!(a instanceof n)) throw new TypeError("Cannot call a class as a function"); }
 
-  function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+  function _defineProperties(e, r) { for (var t = 0; t < r.length; t++) { var o = r[t]; o.enumerable = o.enumerable || !1, o.configurable = !0, "value" in o && (o.writable = !0), Object.defineProperty(e, _toPropertyKey(o.key), o); } }
 
-  function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+  function _createClass(e, r, t) { return r && _defineProperties(e.prototype, r), t && _defineProperties(e, t), Object.defineProperty(e, "prototype", { writable: !1 }), e; }
+
+  function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == typeof i ? i : i + ""; }
+
+  function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != typeof i) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
 
   (window["webpackJsonp"] = window["webpackJsonp"] || []).push([["compras-compras-module"], {
     /***/
@@ -43,12 +47,10 @@
           _classCallCheck(this, MainComponent);
         }
 
-        _createClass(MainComponent, [{
+        return _createClass(MainComponent, [{
           key: "ngOnInit",
           value: function ngOnInit() {}
         }]);
-
-        return MainComponent;
       }();
 
       MainComponent.ɵfac = function MainComponent_Factory(t) {
@@ -1561,7 +1563,7 @@
           this.Fabricantes__ = [];
         }
 
-        _createClass(ProveedoresComponent, [{
+        return _createClass(ProveedoresComponent, [{
           key: "ngOnInit",
           value: function ngOnInit() {
             this.getGrupos();
@@ -1792,8 +1794,6 @@
             });
           }
         }]);
-
-        return ProveedoresComponent;
       }();
 
       ProveedoresComponent.ɵfac = function ProveedoresComponent_Factory(t) {
@@ -2900,9 +2900,9 @@
       /*! @angular/router */
       "tyNb");
 
-      var ComprasModule = function ComprasModule() {
+      var ComprasModule = /*#__PURE__*/_createClass(function ComprasModule() {
         _classCallCheck(this, ComprasModule);
-      };
+      });
 
       ComprasModule.ɵmod = _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵdefineNgModule"]({
         type: ComprasModule
@@ -7598,7 +7598,7 @@
           this.EdicionAvailable = false;
         }
 
-        _createClass(FabricantesComponent, [{
+        return _createClass(FabricantesComponent, [{
           key: "ngOnInit",
           value: function ngOnInit() {
             this.getGrupos();
@@ -7746,7 +7746,7 @@
         }, {
           key: "CambiarImagenE",
           value: function CambiarImagenE(event) {
-            var _this10 = this;
+            var _this0 = this;
 
             this.ImgSubir = event.target.files[0];
             document.getElementsByClassName('file-name')[0].innerHTML = this.ImgSubir.name; // console.log((event.target).files[0])
@@ -7755,7 +7755,7 @@
             var reader = new FileReader();
 
             reader.onload = function (e) {
-              return _this10.imageSrcEdition = reader.result;
+              return _this0.imageSrcEdition = reader.result;
             };
 
             reader.readAsDataURL(file);
@@ -7772,12 +7772,12 @@
         }, {
           key: "BuscarFabricantes",
           value: function BuscarFabricantes() {
-            var _this11 = this;
+            var _this1 = this;
 
             this.api.getFabricantes().subscribe(function (resp) {
-              _this11.proveedores = resp;
-              _this11.filas = _this11.proveedores.length / 4;
-              _this11.filas = Math.ceil(_this11.filas); // console.log(this.proveedores)
+              _this1.proveedores = resp;
+              _this1.filas = _this1.proveedores.length / 4;
+              _this1.filas = Math.ceil(_this1.filas); // console.log(this.proveedores)
             });
           }
         }, {
@@ -7853,7 +7853,7 @@
         }, {
           key: "EdicionFabricacion",
           value: function EdicionFabricacion() {
-            var _this12 = this;
+            var _this10 = this;
 
             var data = {
               nombre: this.Edicion.get('nombre').value,
@@ -7872,18 +7872,18 @@
                 position: 'top-end'
               });
 
-              if (_this12.ImgSubir) {
-                _this12.subirArchivo.actualizarFoto(_this12.ImgSubir, 'fabricante', resp._id).then(function (logo) {
-                  _this12.BuscarFabricantes();
+              if (_this10.ImgSubir) {
+                _this10.subirArchivo.actualizarFoto(_this10.ImgSubir, 'fabricante', resp._id).then(function (logo) {
+                  _this10.BuscarFabricantes();
 
                   if (logo) {
                     document.getElementsByClassName('file-name')[0].innerHTML = 'Sin archivo...';
-                    _this12.ImgSubir = null; // console.log('img',logo)
+                    _this10.ImgSubir = null; // console.log('img',logo)
                   }
                 });
               }
 
-              _this12.Editar('x');
+              _this10.Editar('x');
             });
           }
         }, {
@@ -7892,8 +7892,6 @@
             this.EdicionAvailable = true;
           }
         }]);
-
-        return FabricantesComponent;
       }();
 
       FabricantesComponent.ɵfac = function FabricantesComponent_Factory(t) {
@@ -8697,9 +8695,9 @@
         }]
       }];
 
-      var ComprasRoutingModule = function ComprasRoutingModule() {
+      var ComprasRoutingModule = /*#__PURE__*/_createClass(function ComprasRoutingModule() {
         _classCallCheck(this, ComprasRoutingModule);
-      };
+      });
 
       ComprasRoutingModule.ɵmod = _angular_core__WEBPACK_IMPORTED_MODULE_0__["ɵɵdefineNgModule"]({
         type: ComprasRoutingModule

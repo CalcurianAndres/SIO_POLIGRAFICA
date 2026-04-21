@@ -9,13 +9,785 @@ const Requisicion = require('../database/models/requisicion.model')
 const Devolucion = require('../database/models/devolucion.model')
 const Lotes = require('../database/models/lotes.model')
 const moment = require('moment');
-const Almacenado = require('../database/models/almacenado.model');
+const Almacenado = require('../database/models/almacenado.model')
+const producto = require('../database/models/producto.model')
 
 const mongoose = require('mongoose');
 
+app.get('/api/inventario-reporte-filtro', async (req, res) => {
+    try {
+        const { fechaInicio, fechaFin, clienteId, productoId } = req.query;
+
+        // 1. Construir el filtro base para las Órdenes
+        let filtroOrdenes = {
+            fecha: { $gte: new Date(fechaInicio), $lte: new Date(fechaFin) }
+        };
+
+        if (clienteId) filtroOrdenes.cliente = clienteId;
+
+        // --- LÓGICA DE BÚSQUEDA POR "FOTO" (Nombre, Versión, Edición) ---
+        if (productoId) {
+            // Buscamos el producto maestro para saber qué versión/edición comparar
+            const maestro = await producto.findById(productoId).lean();
+
+            if (maestro) {
+                // Filtramos las órdenes donde la "foto" coincida exactamente con el maestro
+                filtroOrdenes["producto.producto"] = maestro.producto;
+                filtroOrdenes["producto.version"] = maestro.version;
+                filtroOrdenes["producto.edicion"] = maestro.edicion;
+                filtroOrdenes["producto.codigo"] = maestro.codigo;
+            }
+        }
+
+        console.log(filtroOrdenes)
+
+        // Buscamos las órdenes (OPs) que coinciden con los criterios
+        const ordenesEncontradas = await Orden.find(filtroOrdenes).select('sort').lean();
+        const listaOPs = ordenesEncontradas.map(o => o.sort);
+
+        // Si no se encuentran órdenes, devolvemos respuesta vacía de inmediato
+        if (listaOPs.length === 0) {
+            return res.json({
+                rango: { fechaInicio, fechaFin, clienteId, productoId },
+                reporte: [],
+                ordenesProcesadas: [],
+                resumenOrdenes: []
+            });
+        }
+
+        // 2. Buscamos movimientos (Lotes y Devoluciones) asociados a esas OPs
+        const filtroMovimientos = {
+            orden: { $in: listaOPs },
+            fecha: { $gte: new Date(fechaInicio), $lte: new Date(fechaFin) }
+        };
+
+        const [lotes, devoluciones, ordenesModel] = await Promise.all([
+            Lotes.find(filtroMovimientos).populate({ path: 'material.material', populate: { path: 'grupo' } }).lean(),
+            Devolucion.find({ ...filtroMovimientos, status: 'Culminado' }).populate({ path: 'filtrado.material', populate: { path: 'grupo' } }).lean(),
+            Orden.find(filtroOrdenes).populate('cliente').lean()
+        ]);
+
+        const resumenGrupos = {};
+
+        const obtenerNodoMaterial = (grupo, mat) => {
+            let nombreGrupoEfectivo = grupo.nombre || "Sin Grupo";
+            const esSustrato = grupo.nombre && grupo.nombre.toLowerCase().includes('sustrato');
+
+            if (esSustrato && mat.gramaje) {
+                nombreGrupoEfectivo = mat.gramaje <= 200 ? "Sustratos (Papel)" : "Sustratos (Cartón)";
+            }
+
+            if (!resumenGrupos[nombreGrupoEfectivo]) {
+                resumenGrupos[nombreGrupoEfectivo] = {
+                    nombreGrupo: nombreGrupoEfectivo,
+                    materiales: {}
+                };
+            }
+
+            const matId = mat._id.toString();
+            if (!resumenGrupos[nombreGrupoEfectivo].materiales[matId]) {
+                resumenGrupos[nombreGrupoEfectivo].materiales[matId] = {
+                    nombreMaterial: mat.nombre,
+                    marca: mat.marca || 'N/A',
+                    dimensiones: mat.gramaje ? `${mat.ancho}x${mat.largo} ${mat.gramaje}g/m² ${mat.calibre}pt` : '',
+                    unidad: mat.unidad || 'Unds',
+                    tecnicos: {
+                        gramaje: Number(mat.gramaje) || 0,
+                        ancho: Number(mat.ancho) || 0,
+                        largo: Number(mat.largo) || 0
+                    },
+                    asignado_op: 0, devuelto_op: 0, asignado_ad: 0, devuelto_ad: 0
+                };
+            }
+            return resumenGrupos[nombreGrupoEfectivo];
+        };
+
+        // Procesar Asignaciones
+        lotes.forEach(l => {
+            l.material.forEach(item => {
+                if (!item.material?.grupo) return;
+                const nodo = obtenerNodoMaterial(item.material.grupo, item.material);
+                nodo.materiales[item.material._id.toString()].asignado_op += Number(item.cantidad) || 0;
+            });
+        });
+
+        // Procesar Devoluciones
+        devoluciones.forEach(d => {
+            d.filtrado.forEach(item => {
+                if (!item.material?.grupo) return;
+                const nodo = obtenerNodoMaterial(item.material.grupo, item.material);
+                nodo.materiales[item.material._id.toString()].devuelto_op += Number(item.cantidad) || 0;
+            });
+        });
+
+        // 3. Mapeo Final con cálculo de toneladas
+        const reporteFinal = Object.values(resumenGrupos).map(grupo => {
+            const detalles = Object.values(grupo.materiales).map(m => {
+                const neto_op = m.asignado_op - m.devuelto_op;
+                const neto_total = neto_op;
+
+                const calcularPeso = (cantidad) => {
+                    if (m.tecnicos.ancho > 0 && m.tecnicos.largo > 0 && m.tecnicos.gramaje > 0 && cantidad > 0) {
+                        return (m.tecnicos.ancho * m.tecnicos.largo * m.tecnicos.gramaje * cantidad) / 10000000000;
+                    }
+                    return 0;
+                };
+
+                const toneladas_op = calcularPeso(neto_op);
+
+                return {
+                    ...m,
+                    neto_op,
+                    neto_ad: 0,
+                    neto_total,
+                    toneladas_op: Number(toneladas_op.toFixed(4)),
+                    toneladas_ad: 0,
+                    toneladas_gral: Number(toneladas_op.toFixed(4))
+                };
+            });
+
+            return {
+                grupo: grupo.nombreGrupo,
+                total_neto_op: detalles.reduce((acc, d) => acc + d.neto_op, 0),
+                total_neto_ad: 0,
+                total_neto_gral: detalles.reduce((acc, d) => acc + d.neto_total, 0),
+                total_toneladas_op: detalles.reduce((acc, d) => acc + d.toneladas_op, 0),
+                total_toneladas_ad: 0,
+                total_toneladas_gral: detalles.reduce((acc, d) => acc + d.toneladas_gral, 0),
+                detalleMateriales: detalles.sort((a, b) => b.neto_op - a.neto_op)
+            };
+        });
+
+        // Responder con la misma estructura exacta para compatibilidad con el Front
+        res.json({
+            rango: { fechaInicio, fechaFin, clienteId, productoId },
+            reporte: reporteFinal,
+            ordenesProcesadas: listaOPs,
+            resumenOrdenes: ordenesModel
+        });
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Error en el reporte filtrado por cliente/producto" });
+    }
+});
+
+app.get('/api/inventario-reporte-op', async (req, res) => {
+    try {
+        const { op } = req.query;
+        if (!op) return res.status(400).json({ error: "Debe proporcionar una OP" });
+
+        const [lotes, devoluciones, ordenInfo] = await Promise.all([
+            Lotes.find({ orden: op }).populate({ path: 'material.material', populate: { path: 'grupo' } }).lean(),
+            Devolucion.find({ orden: op, status: 'Culminado' }).populate({ path: 'filtrado.material', populate: { path: 'grupo' } }).lean(),
+            Orden.findOne({ sort: op }).populate('cliente').lean()
+        ]);
+
+        const resumenGrupos = {};
+
+        const obtenerNodoMaterial = (grupo, mat) => {
+            let nombreGrupoEfectivo = grupo.nombre || "Sin Grupo";
+            const esSustrato = grupo.nombre && grupo.nombre.toLowerCase().includes('sustrato');
+
+            if (esSustrato && mat.gramaje) {
+                nombreGrupoEfectivo = mat.gramaje <= 200 ? "Sustratos (Papel)" : "Sustratos (Cartón)";
+            }
+
+            if (!resumenGrupos[nombreGrupoEfectivo]) {
+                resumenGrupos[nombreGrupoEfectivo] = { nombreGrupo: nombreGrupoEfectivo, materiales: {} };
+            }
+
+            const matId = mat._id.toString();
+            if (!resumenGrupos[nombreGrupoEfectivo].materiales[matId]) {
+                resumenGrupos[nombreGrupoEfectivo].materiales[matId] = {
+                    nombreMaterial: mat.nombre,
+                    marca: mat.marca || 'N/A',
+                    dimensiones: mat.gramaje ? `${mat.ancho}x${mat.largo} ${mat.gramaje}g/m² ${mat.calibre}pt` : '',
+                    unidad: mat.unidad || 'Unds',
+                    tecnicos: {
+                        gramaje: Number(mat.gramaje) || 0,
+                        ancho: Number(mat.ancho) || 0,
+                        largo: Number(mat.largo) || 0
+                    },
+                    // Mantenemos exactamente los mismos nombres de variables
+                    asignado_op: 0, devuelto_op: 0, asignado_ad: 0, devuelto_ad: 0
+                };
+            }
+            return resumenGrupos[nombreGrupoEfectivo];
+        };
+
+        // En búsqueda por OP, asumimos que todo es "asignado_op" 
+        // porque el usuario está filtrando por el número de orden directamente
+        lotes.forEach(l => {
+            l.material.forEach(item => {
+                if (!item.material?.grupo) return;
+                const nodo = obtenerNodoMaterial(item.material.grupo, item.material);
+                nodo.materiales[item.material._id.toString()].asignado_op += Number(item.cantidad) || 0;
+            });
+        });
+
+        devoluciones.forEach(d => {
+            d.filtrado.forEach(item => {
+                if (!item.material?.grupo) return;
+                const nodo = obtenerNodoMaterial(item.material.grupo, item.material);
+                nodo.materiales[item.material._id.toString()].devuelto_op += Number(item.cantidad) || 0;
+            });
+        });
+
+        const reporteFinal = Object.values(resumenGrupos).map(grupo => {
+            const detalles = Object.values(grupo.materiales).map(m => {
+                const neto_op = m.asignado_op - m.devuelto_op;
+                const neto_ad = 0; // En búsqueda por OP específica, esto suele ser 0
+                const neto_total = neto_op + neto_ad;
+
+                const calcularPeso = (cantidad) => {
+                    if (m.tecnicos.ancho > 0 && m.tecnicos.largo > 0 && m.tecnicos.gramaje > 0 && cantidad > 0) {
+                        return (m.tecnicos.ancho * m.tecnicos.largo * m.tecnicos.gramaje * cantidad) / 10000000000;
+                    }
+                    return 0;
+                };
+
+                return {
+                    ...m,
+                    neto_op,
+                    neto_ad,
+                    neto_total,
+                    toneladas_op: Number(calcularPeso(neto_op).toFixed(4)),
+                    toneladas_ad: 0,
+                    toneladas_gral: Number(calcularPeso(neto_total).toFixed(4))
+                };
+            });
+
+            return {
+                grupo: grupo.nombreGrupo,
+                total_neto_op: detalles.reduce((acc, d) => acc + d.neto_op, 0),
+                total_neto_ad: 0,
+                total_neto_gral: detalles.reduce((acc, d) => acc + d.neto_total, 0),
+                total_toneladas_op: detalles.reduce((acc, d) => acc + d.toneladas_op, 0),
+                total_toneladas_ad: 0,
+                total_toneladas_gral: detalles.reduce((acc, d) => acc + d.toneladas_gral, 0),
+                detalleMateriales: detalles.sort((a, b) => b.neto_op - a.neto_op)
+            };
+        });
+
+        res.json({
+            rango: { fechaInicio: null, fechaFin: null, op: op },
+            reporte: reporteFinal,
+            ordenesProcesadas: [op],
+            resumenOrdenes: [ordenInfo] // Lo enviamos como array para que el *ngFor del front no falle
+        });
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Error en reporte de OP" });
+    }
+});
+
+app.get('/api/inventario-reporte-detallado', async (req, res) => {
+    try {
+        const { fechaInicio, fechaFin } = req.query;
+
+        const filtroFecha = {
+            fecha: { $gte: new Date(fechaInicio), $lte: new Date(fechaFin) }
+        };
+
+        const [lotes, devoluciones, ordenesModel] = await Promise.all([
+            Lotes.find(filtroFecha).populate({ path: 'material.material', populate: { path: 'grupo' } }).lean(),
+            Devolucion.find({ ...filtroFecha, status: 'Culminado' }).populate({ path: 'filtrado.material', populate: { path: 'grupo' } }).lean(),
+            Orden.find(filtroFecha).select('sort orden fecha cliente producto').populate('cliente').lean()
+        ]);
+
+        const ordenesSet = new Set();
+        ordenesModel.forEach(o => { if (o.sort) ordenesSet.add(o.sort); });
+        lotes.forEach(l => { if (l.orden && l.orden !== '#') ordenesSet.add(l.orden); });
+        devoluciones.forEach(d => { if (d.orden && d.orden !== '#') ordenesSet.add(d.orden); });
+
+        const listaOrdenes = Array.from(ordenesSet).sort();
+        const resumenGrupos = {};
+
+        const obtenerNodoMaterial = (grupo, mat) => {
+            let nombreGrupoEfectivo = grupo.nombre || "Sin Grupo";
+            const esSustrato = grupo.nombre && grupo.nombre.toLowerCase().includes('sustrato');
+
+            // --- LÓGICA DE CLASIFICACIÓN PAPEL VS CARTÓN ---
+            if (esSustrato && mat.gramaje) {
+                nombreGrupoEfectivo = mat.gramaje <= 200 ? "Sustratos (Papel)" : "Sustratos (Cartón)";
+            }
+
+            const grupoId = nombreGrupoEfectivo; // Agrupamos por el nuevo nombre
+
+            if (!resumenGrupos[grupoId]) {
+                resumenGrupos[grupoId] = {
+                    nombreGrupo: nombreGrupoEfectivo,
+                    materiales: {}
+                };
+            }
+
+            const matId = mat._id.toString();
+            if (!resumenGrupos[grupoId].materiales[matId]) {
+                resumenGrupos[grupoId].materiales[matId] = {
+                    nombreMaterial: mat.nombre,
+                    marca: mat.marca || 'N/A',
+                    dimensiones: mat.gramaje ? `${mat.ancho}x${mat.largo} ${mat.gramaje}g/m² ${mat.calibre}pt` : '',
+                    unidad: mat.unidad || 'Unds',
+                    // Datos técnicos para el cálculo de peso
+                    tecnicos: {
+                        gramaje: Number(mat.gramaje) || 0,
+                        ancho: Number(mat.ancho) || 0,
+                        largo: Number(mat.largo) || 0
+                    },
+                    asignado_op: 0, devuelto_op: 0, asignado_ad: 0, devuelto_ad: 0
+                };
+            }
+            return resumenGrupos[grupoId];
+        };
+
+        // 1. PROCESAR ASIGNACIONES
+        lotes.forEach(lote => {
+            const esAdicional = lote.orden === '#';
+            lote.material.forEach(item => {
+                if (!item.material || !item.material.grupo) return;
+                const nodo = obtenerNodoMaterial(item.material.grupo, item.material);
+                const matId = item.material._id.toString();
+                const cant = Number(item.cantidad) || 0;
+                if (esAdicional) nodo.materiales[matId].asignado_ad += cant;
+                else nodo.materiales[matId].asignado_op += cant;
+            });
+        });
+
+        // 2. PROCESAR DEVOLUCIONES
+        devoluciones.forEach(dev => {
+            const esAdicional = dev.orden === '#';
+            dev.filtrado.forEach(item => {
+                if (!item.material || !item.material.grupo) return;
+                const nodo = obtenerNodoMaterial(item.material.grupo, item.material);
+                const matId = item.material._id.toString();
+                const cantDev = Number(item.cantidad) || 0;
+                if (esAdicional) nodo.materiales[matId].devuelto_ad += cantDev;
+                else nodo.materiales[matId].devuelto_op += cantDev;
+            });
+        });
+
+        // 3. MAPEO FINAL CON CÁLCULO DE TONELADAS
+        const reporteFinal = Object.values(resumenGrupos).map(grupo => {
+            const detalles = Object.values(grupo.materiales).map(m => {
+                const neto_op = m.asignado_op - m.devuelto_op;
+                const neto_ad = m.asignado_ad - m.devuelto_ad;
+                const neto_total = neto_op + neto_ad;
+
+                // --- FUNCIÓN INTERNA PARA CALCULAR PESO ---
+                const calcularPeso = (cantidad) => {
+                    if (m.tecnicos.ancho > 0 && m.tecnicos.largo > 0 && m.tecnicos.gramaje > 0 && cantidad > 0) {
+                        return (m.tecnicos.ancho * m.tecnicos.largo * m.tecnicos.gramaje * cantidad) / 10000000000;
+                    }
+                    return 0;
+                };
+
+                const toneladas_op = calcularPeso(neto_op);
+                const toneladas_ad = calcularPeso(neto_ad);
+                const toneladas_gral = toneladas_op + toneladas_ad;
+
+                return {
+                    ...m,
+                    neto_op,
+                    neto_ad,
+                    neto_total,
+                    // Toneladas por línea de material
+                    toneladas_op: Number(toneladas_op.toFixed(4)),
+                    toneladas_ad: Number(toneladas_ad.toFixed(4)),
+                    toneladas_gral: Number(toneladas_gral.toFixed(4))
+                };
+            });
+
+            const ordenesPorCliente = {};
+
+            ordenesModel.forEach(o => {
+                const clienteNombre = o.cliente?.nombre || 'Sin Cliente';
+                if (!ordenesPorCliente[clienteNombre]) {
+                    ordenesPorCliente[clienteNombre] = 0;
+                }
+                ordenesPorCliente[clienteNombre]++;
+            });
+
+            // Convertimos a array y ordenamos de mayor a menor
+            rankingClientes = Object.entries(ordenesPorCliente)
+                .map(([nombre, cantidad]) => ({ nombre, cantidad }))
+                .sort((a, b) => b.cantidad - a.cantidad)
+                .slice(0, 10); // Top 10 clientes
+
+
+            return {
+                grupo: grupo.nombreGrupo,
+                total_neto_op: detalles.reduce((acc, d) => acc + d.neto_op, 0),
+                total_neto_ad: detalles.reduce((acc, d) => acc + d.neto_ad, 0),
+                total_neto_gral: detalles.reduce((acc, d) => acc + d.neto_total, 0),
+
+                // --- TOTALES DE TONELAJE POR GRUPO ---
+                total_toneladas_op: detalles.reduce((acc, d) => acc + d.toneladas_op, 0),
+                total_toneladas_ad: detalles.reduce((acc, d) => acc + d.toneladas_ad, 0),
+                total_toneladas_gral: detalles.reduce((acc, d) => acc + d.toneladas_gral, 0),
+
+                detalleMateriales: detalles
+            };
+        });
+
+        reporteFinal.forEach(grupo => {
+            grupo.detalleMateriales.sort((a, b) => b.neto_op - a.neto_op);
+        });
+
+        res.json({
+            rango: { fechaInicio, fechaFin },
+            reporte: reporteFinal,
+            ordenesProcesadas: listaOrdenes,
+            resumenOrdenes: ordenesModel,
+            rankingClientes
+        });
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Error en el reporte maestro" });
+    }
+});
+
+app.get('/api/rendimiento/:orden', async (req, res) => {
+    try {
+        const { orden } = req.params;
+
+        // 1. OBTENER CONFIGURACIÓN DE LA ORDEN
+        const datosOrden = await Orden.findOne({ sort: orden }).lean();
+        if (!datosOrden) return res.status(404).json({ error: "No se encontró la configuración de la Orden" });
+
+        const ordenID = datosOrden._id.toString();
+        const ejemplaresPorHoja = Number(datosOrden.producto.ejemplares[datosOrden.montaje]) || 1;
+        const productoNombre = datosOrden.producto.producto || "N/A";
+
+        // --- CÁLCULO DE DEMASÍA REVERSO (Demasía ya incluida en el total) ---
+        const paginasTotales = Number(datosOrden.paginas) || 0; // Ejemplo: 37700
+        const porcentajeDemasia = Number(datosOrden.demasia) || 0; // Ejemplo: 0.533
+
+        // Hallamos la base (unidades que se necesitan despachar originalmente)
+        // Formula: Base = Total / (1 + (porcentaje/100))
+        const unidadesBase = Math.floor(paginasTotales / (1 + (porcentajeDemasia / 100)));
+
+        // La demasía es la diferencia entre el total y la base
+        const unidadesDemasia = paginasTotales - unidadesBase;
+
+
+        const hojasDemasiaPlanificada = Math.ceil(unidadesDemasia);
+        const hojasNetasPlanificadas = Math.floor(unidadesBase);
+        // -------------------------------------------------------------------
+
+        // 2. CALCULAR PRODUCTO DESPACHADO Y LISTAR HISTORIAL
+        const todosLosDespachos = await Despacho.find({ "despacho.op": orden }).lean();
+        let totalUnidadesDespachadas = 0;
+        let historialDespachos = [];
+
+        todosLosDespachos.forEach(doc => {
+            doc.despacho.forEach(item => {
+                if (item.op === orden) {
+                    const cant = Number(item.cantidad) || 0;
+                    totalUnidadesDespachadas += cant;
+                    historialDespachos.push({
+                        identificador: item.parcial || doc.fecha || 'N/A',
+                        cantidad: cant,
+                        documento: item.documento || 'S/D',
+                        certificado: item.certificado || 'N/A',
+                        hojasEquivalentes: Math.ceil(cant / ejemplaresPorHoja)
+                    });
+                }
+            });
+        });
+
+        let totalHojasDespachadas = Math.ceil(totalUnidadesDespachadas / ejemplaresPorHoja);
+
+        // 3. DETERMINAR MÁQUINA FINAL Y SUSTRATO PROCESADO
+        const ultimoTrabajo = await Trabajo.findOne({ orden: ordenID }).sort({ pos: -1 }).lean();
+        const maquinaFinal = ultimoTrabajo ? ultimoTrabajo.maquina : "N/A";
+
+        const gestiones = await Gestiones.find({ op: ordenID, maquina: maquinaFinal }).lean();
+        const totalSustratoProcesado = gestiones.reduce((acc, ges) => acc + (Number(ges.hojas) || 0), 0);
+
+        // 4. PROCESAR MATERIALES (SUSTRATOS Y MATERIA PRIMA)
+        const lotes = await Lotes.find({ orden: orden }).populate('material.material');
+        let sustratosMap = {};
+        let materiaPrimaMap = {};
+        let asignaciones = 0
+        let cabidaPorCaja = 0;
+        lotes.forEach(lote => {
+            lote.material.forEach(mat => {
+                if (!mat.material) return;
+                const idMat = mat.material._id.toString();
+                const cant = Number(mat.cantidad) || 0;
+
+                if (mat.material.gramaje) {
+                    if (!sustratosMap[idMat]) {
+                        sustratosMap[idMat] = {
+                            nombre: `${mat.material.nombre} (${mat.material.ancho} x ${mat.material.largo}) ${mat.material.gramaje}g/m² ${mat.material.calibre}pt (${mat.material.marca})`,
+                            asignado: 0,
+                            devuelto: 0
+                        };
+                    }
+                    sustratosMap[idMat].asignado += cant;
+                } else {
+                    if (!materiaPrimaMap[idMat]) {
+                        materiaPrimaMap[idMat] = {
+                            nombre: `${mat.material.nombre} (${mat.material.marca})`,
+                            unidad: mat.material.unidad || 'Unds',
+                            asignado: 0,
+                            devuelto: 0
+                        };
+
+                        if (mat.material.grupo && asignaciones <= 0) {
+                            if (mat.material.grupo.toString() === '61fd7a8ed9115415a4416f74') {
+                                console.log(idMat, 'ES CAJA', `${mat.material.nombre} (${mat.material.marca})`)
+                                cabidaPorCaja = datosOrden.producto.materiales[datosOrden.montaje].find(m => m.producto.toString() === idMat)?.cantidad || 0;
+                                console.log('CABIDA POR CAJA:', cabidaPorCaja)
+                                if (cabidaPorCaja > 0) {
+                                    asignaciones++;
+                                }
+                            }
+                        }
+                    }
+                    materiaPrimaMap[idMat].asignado += cant;
+                }
+            });
+        });
+
+        // 5. PROCESAR DEVOLUCIONES
+        const devoluciones = await Devolucion.find({ orden: orden, status: 'Culminado' }).populate('filtrado.material');
+        devoluciones.forEach(dev => {
+            dev.filtrado.forEach(item => {
+                if (!item.material) return;
+                const idMat = item.material._id.toString();
+                const cantDev = (Number(item.cantidad) || 0);
+                if (sustratosMap[idMat]) sustratosMap[idMat].devuelto += cantDev;
+                else if (materiaPrimaMap[idMat]) materiaPrimaMap[idMat].devuelto += cantDev;
+            });
+        });
+
+        // 6. CÁLCULOS FINALES
+        const detallesSustratos = Object.values(sustratosMap).map(s => ({ ...s, usado: s.asignado - s.devuelto }));
+        const detallesMateriaPrima = Object.values(materiaPrimaMap).map(m => ({ ...m, usado: m.asignado - m.devuelto }));
+        const totalUsado = detallesSustratos.reduce((acc, s) => acc + s.usado, 0);
+        if (datosOrden.cliente == '68dfd6f0cb4d5b01d8f54684') {
+            totalUnidadesDespachadas = totalUnidadesDespachadas * cabidaPorCaja;
+            totalHojasDespachadas = totalUnidadesDespachadas / ejemplaresPorHoja;
+        }
+
+        const rendimientoGral = totalUsado > 0
+            ? ((totalSustratoProcesado / totalUsado) * 100).toFixed(2)
+            : 0;
+
+        // 7. RESPUESTA FINAL
+        res.json({
+            orden: orden,
+            op: ordenID,
+            producto: productoNombre,
+            cantidadSolicitada: datosOrden.cantidad || 0,
+            ejemplaresPorHoja,
+            rendimiento: rendimientoGral,
+            cabida: cabidaPorCaja,
+            maquinaFinal,
+            planificacion: {
+                paginasTotales: paginasTotales,
+                unidadesBase: Math.round(unidadesBase),
+                porcentajeDemasia: porcentajeDemasia,
+                hojasDemasia: hojasDemasiaPlanificada,
+                hojasNetas: hojasNetasPlanificadas
+            },
+            metricas: {
+                procesadoHojas: totalSustratoProcesado,
+                despachadoHojas: Math.ceil(totalHojasDespachadas),
+                totalUsadoHojas: totalUsado,
+                unidadesTotalesDespachadas: totalUnidadesDespachadas
+            },
+            detallesSustratos,
+            detallesMateriaPrima,
+            historialDespachos
+        });
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Error en el cálculo integral" });
+    }
+});
+
+app.get('/api/reportes/consumo-materiales-por-periodo', async (req, res) => {
+    try {
+        const from = new Date(req.query.from);
+        const to = new Date(req.query.to);
+        const groupBy = req.query.groupBy || 'month'; // month | year
+
+        const periodos = [];
+        const cursor = new Date(from);
+        cursor.setDate(1);
+
+        while (cursor <= to) {
+            const inicio = new Date(cursor);
+            let fin;
+
+            if (groupBy === 'year') {
+                fin = new Date(inicio.getFullYear(), 11, 31, 23, 59, 59);
+                cursor.setFullYear(cursor.getFullYear() + 1);
+            } else {
+                fin = new Date(inicio.getFullYear(), inicio.getMonth() + 1, 0, 23, 59, 59);
+                cursor.setMonth(cursor.getMonth() + 1);
+            }
+
+            if (fin > to) fin = new Date(to);
+
+            const resultado = {};
+
+            /* ================= ASIGNACIONES ================= */
+            const asignaciones = await Lotes.find({
+                fecha: { $gte: inicio, $lte: fin }
+            })
+                .populate({
+                    path: "material.material",
+                    populate: { path: "grupo" }
+                })
+                .lean();
+
+            for (const a of asignaciones) {
+                for (const m of a.material) {
+
+                    const mat = m.material;
+                    if (!mat) continue;
+
+                    const key = [
+                        mat.grupo?.nombre,
+                        mat.nombre,
+                        mat.marca,
+                        mat.calibre,
+                        mat.gramaje,
+                        mat.ancho,
+                        mat.largo
+                    ].join("|");
+
+                    if (!resultado[key]) {
+                        resultado[key] = {
+                            grupo: mat.grupo?.nombre || "SIN_GRUPO",
+
+                            asignado_total: 0,
+                            asignado_op: 0,
+                            asignado_otros: 0,
+
+                            devuelto_total: 0,
+                            devuelto_op: 0,
+                            devuelto_otros: 0
+                        };
+                    }
+
+                    const cantidad = Number(m.cantidad) || 0;
+
+                    resultado[key].asignado_total += cantidad;
+
+                    if (a.orden === "#") {
+                        resultado[key].asignado_otros += cantidad;
+                    } else {
+                        resultado[key].asignado_op += cantidad;
+                    }
+                }
+            }
+
+            /* ================= DEVOLUCIONES ================= */
+            const devoluciones = await Devolucion.find({
+                status: "Culminado",
+                fecha: { $gte: inicio, $lte: fin }
+            })
+                .populate({
+                    path: "filtrado.material",
+                    populate: { path: "grupo" }
+                })
+                .lean();
+
+            for (const d of devoluciones) {
+                for (const f of d.filtrado) {
+
+                    const mat = f.material;
+                    if (!mat) continue;
+
+                    const key = [
+                        mat.grupo?.nombre,
+                        mat.nombre,
+                        mat.marca,
+                        mat.calibre,
+                        mat.gramaje,
+                        mat.ancho,
+                        mat.largo
+                    ].join("|");
+
+                    if (!resultado[key]) continue;
+
+                    const cantidad = Number(f.cantidad) || 0;
+
+                    resultado[key].devuelto_total += cantidad;
+
+                    if (d.orden === "#") {
+                        resultado[key].devuelto_otros += cantidad;
+                    } else {
+                        resultado[key].devuelto_op += cantidad;
+                    }
+                }
+            }
+
+            /* ================= AGRUPAR POR GRUPO ================= */
+            const porGrupo = {};
+
+            for (const item of Object.values(resultado)) {
+
+                if (!porGrupo[item.grupo]) {
+                    porGrupo[item.grupo] = {
+                        grupo: item.grupo,
+
+                        totalAsignado: 0,
+                        totalAsignadoOP: 0,
+                        totalAsignadoOtros: 0,
+
+                        totalDevuelto: 0,
+                        totalDevueltoOP: 0,
+                        totalDevueltoOtros: 0,
+
+                        totalConsumido: 0,
+                        totalConsumidoOP: 0
+                    };
+                }
+
+                porGrupo[item.grupo].totalAsignado += item.asignado_total;
+                porGrupo[item.grupo].totalAsignadoOP += item.asignado_op;
+                porGrupo[item.grupo].totalAsignadoOtros += item.asignado_otros;
+
+                porGrupo[item.grupo].totalDevuelto += item.devuelto_total;
+                porGrupo[item.grupo].totalDevueltoOP += item.devuelto_op;
+                porGrupo[item.grupo].totalDevueltoOtros += item.devuelto_otros;
+
+                porGrupo[item.grupo].totalConsumido += (item.asignado_total - item.devuelto_total);
+                porGrupo[item.grupo].totalConsumidoOP += (item.asignado_op - item.devuelto_op);
+            }
+
+            periodos.push({
+                year: inicio.getFullYear(),
+                month: groupBy === 'month' ? inicio.getMonth() + 1 : null,
+                label: groupBy === 'month'
+                    ? `${inicio.toLocaleString('es', { month: 'long' })} ${inicio.getFullYear()}`
+                    : `${inicio.getFullYear()}`,
+                grupos: Object.values(porGrupo)
+            });
+        }
+
+        res.json(periodos);
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Error generando reporte por periodo" });
+    }
+});
+
+
+
 app.get('/api/estadisticas/maquinas', (req, res) => {
 
-    trabajos_realizados = []
+    _realizados = []
 
     Gestiones.find()
         .populate('maquina')

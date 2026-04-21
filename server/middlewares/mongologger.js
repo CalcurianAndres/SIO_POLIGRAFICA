@@ -57,7 +57,7 @@ module.exports = function mongoLogger() {
             const log = {
                 modelo: this.model.modelName,
                 operacion: this.op,
-                filtro: this.getQuery(),
+                // filtro: this.getQuery() ? this.getQuery() : null,
                 update: this.getUpdate ? this.getUpdate() : null,
                 duracion_ms: duration,
                 fecha: new Date().toISOString()

@@ -1,23 +1,19 @@
 const nodemailer = require('nodemailer');
-const {header2, footer} = require('../templates/template.email');
-let {tituloCorreo} = require('../templates/template.email')
+const { header2, footer } = require('../templates/template.email');
+let { tituloCorreo } = require('../templates/template.email')
 
-function NuevaRequisicion_(orden,correo,motivo,name){
+function NuevaRequisicion_(orden, correo, motivo, name) {
     var transporter = nodemailer.createTransport({
-        host: "mail.poligraficaindustrial.com",
-        port: 2525,
-        secure: false,
+        host: "smtp.office365.com",
+        port: 587,
+        secure: false, // SIEMPRE false con STARTTLS
         auth: {
             user: 'sio.soporte@poligraficaindustrial.com',
-            pass: 'P0l1ndc@'
+            pass: 'LkBUe2Drk%pe16YL'
         },
         tls: {
-            rejectUnauthorized: false
-        },
-        maxConnections: 5,
-        maxMessages: 10,
-        rateDelta: 1000, // 1000 ms delay between sending emails
-        rateLimit: true
+            ciphers: 'SSLv3'
+        }
     });
 
 
@@ -26,7 +22,7 @@ function NuevaRequisicion_(orden,correo,motivo,name){
         from: '"SIO - Sistema Integral de Operacion" <sio.soporte@poligraficaindustrial.com>',
         to: correo,
         subject: `Solicitud de Material`,
-        html:`${header2(titulo)}
+        html: `${header2(titulo)}
         <br>
                Se ha realizado una nueva solicitud de material
                <br>
@@ -43,10 +39,10 @@ table, th, td {
             ${footer}`
     };
 
-    transporter.sendMail(mailOptions, (err, info)=>{
-        if(err){
+    transporter.sendMail(mailOptions, (err, info) => {
+        if (err) {
             console.log(err);
-        }else{
+        } else {
             // //console.log(info);
         }
     });
@@ -54,22 +50,18 @@ table, th, td {
 
 }
 
-function NuevaRequisicion(orden,correo,motivo){
+function NuevaRequisicion(orden, correo, motivo) {
     var transporter = nodemailer.createTransport({
-        host: "mail.poligraficaindustrial.com",
-        port: 2525,
-        secure: false,
+        host: "smtp.office365.com",
+        port: 587,
+        secure: false, // SIEMPRE false con STARTTLS
         auth: {
             user: 'sio.soporte@poligraficaindustrial.com',
-            pass: 'P0l1ndc@'
+            pass: 'LkBUe2Drk%pe16YL'
         },
         tls: {
-            rejectUnauthorized: false
-        },
-        maxConnections: 5,
-        maxMessages: 10,
-        rateDelta: 1000, // 1000 ms delay between sending emails
-        rateLimit: true
+            ciphers: 'SSLv3'
+        }
     });
 
 
@@ -78,7 +70,7 @@ function NuevaRequisicion(orden,correo,motivo){
         from: '"SIO - Sistema Integral de Operacion" <sio.soporte@poligraficaindustrial.com>',
         to: correo,
         subject: `Solicitud de Material`,
-        html:`${header2(titulo)}
+        html: `${header2(titulo)}
         <br>
                Se ha realizado una nueva solicitud de material asociada a la Orden de Producción:
                <br>
@@ -96,10 +88,10 @@ table, th, td {
             ${footer}`
     };
 
-    transporter.sendMail(mailOptions, (err, info)=>{
-        if(err){
+    transporter.sendMail(mailOptions, (err, info) => {
+        if (err) {
             console.log(err);
-        }else{
+        } else {
             // //console.log(info);
         }
     });

@@ -1,15 +1,19 @@
 (function () {
-  function _createForOfIteratorHelper(o, allowArrayLike) { var it = typeof Symbol !== "undefined" && o[Symbol.iterator] || o["@@iterator"]; if (!it) { if (Array.isArray(o) || (it = _unsupportedIterableToArray(o)) || allowArrayLike && o && typeof o.length === "number") { if (it) o = it; var i = 0; var F = function F() {}; return { s: F, n: function n() { if (i >= o.length) return { done: true }; return { done: false, value: o[i++] }; }, e: function e(_e) { throw _e; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var normalCompletion = true, didErr = false, err; return { s: function s() { it = it.call(o); }, n: function n() { var step = it.next(); normalCompletion = step.done; return step; }, e: function e(_e2) { didErr = true; err = _e2; }, f: function f() { try { if (!normalCompletion && it["return"] != null) it["return"](); } finally { if (didErr) throw err; } } }; }
+  function _createForOfIteratorHelper(r, e) { var t = "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (!t) { if (Array.isArray(r) || (t = _unsupportedIterableToArray(r)) || e && r && "number" == typeof r.length) { t && (r = t); var _n = 0, F = function F() {}; return { s: F, n: function n() { return _n >= r.length ? { done: !0 } : { done: !1, value: r[_n++] }; }, e: function e(r) { throw r; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var o, a = !0, u = !1; return { s: function s() { t = t.call(r); }, n: function n() { var r = t.next(); return a = r.done, r; }, e: function e(r) { u = !0, o = r; }, f: function f() { try { a || null == t["return"] || t["return"](); } finally { if (u) throw o; } } }; }
 
-  function _unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen); }
+  function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
 
-  function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
+  function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
 
-  function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+  function _classCallCheck(a, n) { if (!(a instanceof n)) throw new TypeError("Cannot call a class as a function"); }
 
-  function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+  function _defineProperties(e, r) { for (var t = 0; t < r.length; t++) { var o = r[t]; o.enumerable = o.enumerable || !1, o.configurable = !0, "value" in o && (o.writable = !0), Object.defineProperty(e, _toPropertyKey(o.key), o); } }
 
-  function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+  function _createClass(e, r, t) { return r && _defineProperties(e.prototype, r), t && _defineProperties(e, t), Object.defineProperty(e, "prototype", { writable: !1 }), e; }
+
+  function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == typeof i ? i : i + ""; }
+
+  function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != typeof i) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
 
   (window["webpackJsonp"] = window["webpackJsonp"] || []).push([["polyfills-es5"], {
     /***/
@@ -106,9 +110,7 @@
 
           result = new (Constructor === undefined ? Array : Constructor)(max(fin - k, 0));
 
-          for (n = 0; k < fin; k++, n++) {
-            if (k in O) createProperty(result, n, O[k]);
-          }
+          for (n = 0; k < fin; k++, n++) if (k in O) createProperty(result, n, O[k]);
 
           result.length = n;
           return result;
@@ -126,7 +128,7 @@
     /*! no static exports found */
 
     /***/
-    function zm(module, exports, __webpack_require__) {
+    function _5zm(module, exports, __webpack_require__) {
       var $ = __webpack_require__(
       /*! ../internals/export */
       "I+eb");
@@ -162,7 +164,7 @@
     /*! no static exports found */
 
     /***/
-    function GqU(module, exports, __webpack_require__) {
+    function _GqU(module, exports, __webpack_require__) {
       // toObject with fallback for non-array-like ES3 strings
       var IndexedObject = __webpack_require__(
       /*! ../internals/indexed-object */
@@ -188,7 +190,7 @@
     /*! no static exports found */
 
     /***/
-    function b8u(module, exports, __webpack_require__) {
+    function _b8u(module, exports, __webpack_require__) {
       var NATIVE_SYMBOL = __webpack_require__(
       /*! ../internals/native-symbol */
       "STAE");
@@ -208,7 +210,7 @@
     /*! no static exports found */
 
     /***/
-    function byt(module, exports) {
+    function _byt(module, exports) {
       // iterable DOM collections
       // flag - `iterable` interface - 'entries', 'keys', 'values', 'forEach' methods
       module.exports = {
@@ -256,7 +258,7 @@
     /*! no static exports found */
 
     /***/
-    function qmn(module, exports, __webpack_require__) {
+    function _qmn(module, exports, __webpack_require__) {
       var global = __webpack_require__(
       /*! ../internals/global */
       "2oRo");
@@ -673,7 +675,7 @@
     /*! no static exports found */
 
     /***/
-    function YN(module, exports, __webpack_require__) {
+    function Y_n(module, exports, __webpack_require__) {
       var aFunction = __webpack_require__(
       /*! ../internals/a-function */
       "HAuM");
@@ -713,10 +715,8 @@
             }
           }
 
-          for (; IS_RIGHT ? index >= 0 : length > index; index += i) {
-            if (index in self) {
-              memo = callbackfn(memo, self[index], index, O);
-            }
+          for (; IS_RIGHT ? index >= 0 : length > index; index += i) if (index in self) {
+            memo = callbackfn(memo, self[index], index, O);
           }
 
           return memo;
@@ -1007,30 +1007,6 @@
       }
       /***/
 
-    },
-
-    /***/
-    4:
-    /*!****************************************************************************************************************************************************!*\
-      !*** multi ./node_modules/@angular-devkit/build-angular/src/angular-cli-files/models/es5-polyfills.js zone.js/dist/zone-legacy ./src/polyfills.ts ***!
-      \****************************************************************************************************************************************************/
-
-    /*! no static exports found */
-
-    /***/
-    function _(module, exports, __webpack_require__) {
-      __webpack_require__(
-      /*! C:\Users\administrador\Desktop\SIOBK\SIO2025F\node_modules\@angular-devkit\build-angular\src\angular-cli-files\models\es5-polyfills.js */
-      "mRIq");
-
-      __webpack_require__(
-      /*! zone.js/dist/zone-legacy */
-      "R0gw");
-
-      module.exports = __webpack_require__(
-      /*! C:\Users\administrador\Desktop\SIOBK\SIO2025F\src\polyfills.ts */
-      "hN/g");
-      /***/
     },
 
     /***/
@@ -1357,7 +1333,7 @@
     /*! no static exports found */
 
     /***/
-    function oU(module, exports, __webpack_require__) {
+    function oU_(module, exports, __webpack_require__) {
       var global = __webpack_require__(
       /*! ../internals/global */
       "2oRo");
@@ -1387,9 +1363,7 @@
       "busE");
 
       module.exports = function (target, src, options) {
-        for (var key in src) {
-          redefine(target, key, src[key], options);
-        }
+        for (var key in src) redefine(target, key, src[key], options);
 
         return target;
       };
@@ -1559,9 +1533,7 @@
         if (arguments.length > 1) index = min(index, toInteger(arguments[1]));
         if (index < 0) index = length + index;
 
-        for (; index >= 0; index--) {
-          if (index in O && O[index] === searchElement) return index || 0;
-        }
+        for (; index >= 0; index--) if (index in O && O[index] === searchElement) return index || 0;
 
         return -1;
       } : nativeLastIndexOf;
@@ -1898,7 +1870,7 @@
         notify(promise, state, true);
       };
 
-      var internalResolve = function internalResolve(promise, state, value, unwrap) {
+      var _internalResolve = function internalResolve(promise, state, value, unwrap) {
         if (state.done) return;
         state.done = true;
         if (unwrap) state = unwrap;
@@ -1914,7 +1886,7 @@
               };
 
               try {
-                then.call(value, bind(internalResolve, promise, wrapper, state), bind(internalReject, promise, wrapper, state));
+                then.call(value, bind(_internalResolve, promise, wrapper, state), bind(internalReject, promise, wrapper, state));
               } catch (error) {
                 internalReject(promise, wrapper, error, state);
               }
@@ -1941,7 +1913,7 @@
           var state = getInternalState(this);
 
           try {
-            executor(bind(internalResolve, this, state), bind(internalReject, this, state));
+            executor(bind(_internalResolve, this, state), bind(internalReject, this, state));
           } catch (error) {
             internalReject(this, state, error);
           }
@@ -1986,7 +1958,7 @@
           var promise = new Internal();
           var state = getInternalState(promise);
           this.promise = promise;
-          this.resolve = bind(internalResolve, promise, state);
+          this.resolve = bind(_internalResolve, promise, state);
           this.reject = bind(internalReject, promise, state);
         };
 
@@ -2131,6 +2103,30 @@
       }, {
         MIN_SAFE_INTEGER: -0x1FFFFFFFFFFFFF
       });
+      /***/
+    },
+
+    /***/
+    6:
+    /*!****************************************************************************************************************************************************!*\
+      !*** multi ./node_modules/@angular-devkit/build-angular/src/angular-cli-files/models/es5-polyfills.js zone.js/dist/zone-legacy ./src/polyfills.ts ***!
+      \****************************************************************************************************************************************************/
+
+    /*! no static exports found */
+
+    /***/
+    function _(module, exports, __webpack_require__) {
+      __webpack_require__(
+      /*! C:\Users\administrador\Desktop\SIOBK\SIO2025F\node_modules\@angular-devkit\build-angular\src\angular-cli-files\models\es5-polyfills.js */
+      "mRIq");
+
+      __webpack_require__(
+      /*! zone.js/dist/zone-legacy */
+      "R0gw");
+
+      module.exports = __webpack_require__(
+      /*! C:\Users\administrador\Desktop\SIOBK\SIO2025F\src\polyfills.ts */
+      "hN/g");
       /***/
     },
 
@@ -2785,7 +2781,7 @@
     /*! no static exports found */
 
     /***/
-    function dT(module, exports, __webpack_require__) {
+    function d_t(module, exports, __webpack_require__) {
       var TO_STRING_TAG_SUPPORT = __webpack_require__(
       /*! ../internals/to-string-tag-support */
       "AO7/");
@@ -2861,7 +2857,7 @@
     /*! no static exports found */
 
     /***/
-    function tb(module, exports, __webpack_require__) {
+    function tb_(module, exports, __webpack_require__) {
       var $ = __webpack_require__(
       /*! ../internals/export */
       "I+eb");
@@ -2941,9 +2937,7 @@
             };
         }
 
-        return function ()
-        /* ...args */
-        {
+        return function () {
           return fn.apply(that, arguments);
         };
       };
@@ -2960,7 +2954,7 @@
     /*! no static exports found */
 
     /***/
-    function AO7(module, exports, __webpack_require__) {
+    function AO7_(module, exports, __webpack_require__) {
       var wellKnownSymbol = __webpack_require__(
       /*! ../internals/well-known-symbol */
       "tiKp");
@@ -3078,9 +3072,7 @@
 
       var construct = function construct(C, argsLength, args) {
         if (!(argsLength in factories)) {
-          for (var list = [], i = 0; i < argsLength; i++) {
-            list[i] = 'a[' + i + ']';
-          } // eslint-disable-next-line no-new-func
+          for (var list = [], i = 0; i < argsLength; i++) list[i] = 'a[' + i + ']'; // eslint-disable-next-line no-new-func
 
 
           factories[argsLength] = Function('C,a', 'return new C(' + list.join(',') + ')');
@@ -3097,9 +3089,7 @@
         var fn = aFunction(this);
         var partArgs = slice.call(arguments, 1);
 
-        var boundFunction = function bound()
-        /* args... */
-        {
+        var boundFunction = function bound() {
           var args = partArgs.concat(slice.call(arguments));
           return this instanceof boundFunction ? construct(fn, args.length, args) : fn.apply(that, args);
         };
@@ -3120,7 +3110,7 @@
     /*! no static exports found */
 
     /***/
-    function BXB(module, exports, __webpack_require__) {
+    function BX_b(module, exports, __webpack_require__) {
       var toIndexedObject = __webpack_require__(
       /*! ../internals/to-indexed-object */
       "/GqU");
@@ -3597,9 +3587,7 @@
         var n = toInteger(count);
         if (n < 0 || n == Infinity) throw RangeError('Wrong number of repetitions');
 
-        for (; n > 0; (n >>>= 1) && (str += str)) {
-          if (n & 1) result += str;
-        }
+        for (; n > 0; (n >>>= 1) && (str += str)) if (n & 1) result += str;
 
         return result;
       };
@@ -5193,9 +5181,7 @@
           var args = [];
           var i = 1;
 
-          while (arguments.length > i) {
-            args.push(arguments[i++]);
-          }
+          while (arguments.length > i) args.push(arguments[i++]);
 
           queue[++counter] = function () {
             // eslint-disable-next-line no-new-func
@@ -5327,9 +5313,7 @@
         var index = 0;
         var key;
 
-        while (length > index) {
-          definePropertyModule.f(O, key = keys[index++], Properties[key]);
-        }
+        while (length > index) definePropertyModule.f(O, key = keys[index++], Properties[key]);
 
         return O;
       };
@@ -5393,7 +5377,7 @@
     /*! no static exports found */
 
     /***/
-    function NCY(module, exports, __webpack_require__) {
+    function NC_Y(module, exports, __webpack_require__) {
       var getBuiltIn = __webpack_require__(
       /*! ../internals/get-built-in */
       "0GbY");
@@ -6843,9 +6827,7 @@
         var keys = getOwnPropertyNames(NativeRegExp);
         var index = 0;
 
-        while (keys.length > index) {
-          proxy(keys[index++]);
-        }
+        while (keys.length > index) proxy(keys[index++]);
 
         RegExpPrototype.constructor = RegExpWrapper;
         RegExpWrapper.prototype = RegExpPrototype;
@@ -7348,9 +7330,7 @@
             // the slice polyfill when slicing native arrays) "doesn't work" in safari 9 and
             // causes a crash (https://pastebin.com/N21QzeQA) when trying to debug it.
 
-            for (var j = 1; j < result.length; j++) {
-              captures.push(maybeToString(result[j]));
-            }
+            for (var j = 1; j < result.length; j++) captures.push(maybeToString(result[j]));
 
             var namedCaptures = result.groups;
 
@@ -7751,16 +7731,12 @@
         stat: true,
         forced: ISNT_GENERIC
       }, {
-        of: function of()
-        /* ...args */
-        {
+        of: function of() {
           var index = 0;
           var argumentsLength = arguments.length;
           var result = new (typeof this == 'function' ? this : Array)(argumentsLength);
 
-          while (argumentsLength > index) {
-            createProperty(result, index, arguments[index++]);
-          }
+          while (argumentsLength > index) createProperty(result, index, arguments[index++]);
 
           result.length = argumentsLength;
           return result;
@@ -8167,9 +8143,7 @@
               while (entry = entry ? entry.next : state.first) {
                 boundFunction(entry.value, entry.key, this); // revert to the last existing entry
 
-                while (entry && entry.removed) {
-                  entry = entry.previous;
-                }
+                while (entry && entry.removed) entry = entry.previous;
               }
             },
             // 23.1.3.7 Map.prototype.has(key)
@@ -8220,9 +8194,7 @@
             var kind = state.kind;
             var entry = state.last; // revert to the last existing entry
 
-            while (entry && entry.removed) {
-              entry = entry.previous;
-            } // get next entry
+            while (entry && entry.removed) entry = entry.previous; // get next entry
 
 
             if (!state.target || !(state.last = entry = entry ? entry.next : state.state.first)) {
@@ -8600,9 +8572,7 @@
             var $instance = new NativeConstructor();
             var index = 5;
 
-            while (index--) {
-              $instance[ADDER](index, index);
-            }
+            while (index--) $instance[ADDER](index, index);
 
             return !$instance.has(-0);
           });
@@ -8822,7 +8792,7 @@
     /*! no static exports found */
 
     /***/
-    function dGN(module, exports, __webpack_require__) {
+    function dG_n(module, exports, __webpack_require__) {
       var path = __webpack_require__(
       /*! ../internals/path */
       "Qo9l");
@@ -9111,9 +9081,7 @@
         _NullProtoObject = activeXDocument ? NullProtoObjectViaActiveX(activeXDocument) : NullProtoObjectViaIFrame();
         var length = enumBugKeys.length;
 
-        while (length--) {
-          delete _NullProtoObject[PROTOTYPE][enumBugKeys[length]];
-        }
+        while (length--) delete _NullProtoObject[PROTOTYPE][enumBugKeys[length]];
 
         return _NullProtoObject();
       };
@@ -9433,7 +9401,7 @@
     /*! no static exports found */
 
     /***/
-    function g6v(module, exports, __webpack_require__) {
+    function g6v_(module, exports, __webpack_require__) {
       var fails = __webpack_require__(
       /*! ../internals/fails */
       "0Dky"); // Thank's IE8 for his funny defineProperty
@@ -9545,9 +9513,7 @@
         var end = argumentsLength > 2 ? arguments[2] : undefined;
         var endPos = end === undefined ? length : toAbsoluteIndex(end, length);
 
-        while (endPos > index) {
-          O[index++] = value;
-        }
+        while (endPos > index) O[index++] = value;
 
         return O;
       };
@@ -9678,7 +9644,7 @@
     /*! no exports provided */
 
     /***/
-    function hNG(module, __webpack_exports__, __webpack_require__) {
+    function hN_g(module, __webpack_exports__, __webpack_require__) {
       "use strict";
 
       __webpack_require__.r(__webpack_exports__);
@@ -11043,7 +11009,7 @@
     /*! no static exports found */
 
     /***/
-    function mL8(module, exports, __webpack_require__) {
+    function m_L8(module, exports, __webpack_require__) {
       var DESCRIPTORS = __webpack_require__(
       /*! ../internals/descriptors */
       "g6v/");
@@ -12123,9 +12089,7 @@
               len = toLength(E.length);
               if (n + len > MAX_SAFE_INTEGER) throw TypeError(MAXIMUM_ALLOWED_INDEX_EXCEEDED);
 
-              for (k = 0; k < len; k++, n++) {
-                if (k in E) createProperty(A, n, E[k]);
-              }
+              for (k = 0; k < len; k++, n++) if (k in E) createProperty(A, n, E[k]);
             } else {
               if (n >= MAX_SAFE_INTEGER) throw TypeError(MAXIMUM_ALLOWED_INDEX_EXCEEDED);
               createProperty(A, n++, E);
@@ -12148,7 +12112,7 @@
     /*! no static exports found */
 
     /***/
-    function nMU(module, exports, __webpack_require__) {
+    function n_mU(module, exports, __webpack_require__) {
       var $ = __webpack_require__(
       /*! ../internals/export */
       "I+eb");
@@ -12179,7 +12143,7 @@
     /*! no static exports found */
 
     /***/
-    function n3R(module, exports, __webpack_require__) {
+    function n3_R(module, exports, __webpack_require__) {
       "use strict";
 
       var fails = __webpack_require__(
@@ -12406,9 +12370,7 @@
               if (from in O) O[to] = O[from];else delete O[to];
             }
 
-            for (k = len; k > len - actualDeleteCount + insertCount; k--) {
-              delete O[k - 1];
-            }
+            for (k = len; k > len - actualDeleteCount + insertCount; k--) delete O[k - 1];
           } else if (insertCount > actualDeleteCount) {
             for (k = len - actualDeleteCount; k > actualStart; k--) {
               from = k + actualDeleteCount - 1;
@@ -12508,7 +12470,7 @@
               this._zoneDelegate = new ZoneDelegate(this, this._parent && this._parent._zoneDelegate, zoneSpec);
             }
 
-            _createClass(Zone, [{
+            return _createClass(Zone, [{
               key: "parent",
               get: function get() {
                 return this._parent;
@@ -12795,8 +12757,6 @@
                 }
               }
             }]);
-
-            return Zone;
           }(); // tslint:disable-next-line:require-internal-with-underscore
 
 
@@ -12884,7 +12844,7 @@
               }
             }
 
-            _createClass(ZoneDelegate, [{
+            return _createClass(ZoneDelegate, [{
               key: "fork",
               value: function fork(targetZone, zoneSpec) {
                 return this._forkZS ? this._forkZS.onFork(this._forkDlgt, this.zone, targetZone, zoneSpec) : new Zone(targetZone, zoneSpec);
@@ -12986,8 +12946,6 @@
                 }
               }
             }]);
-
-            return ZoneDelegate;
           }();
 
           var ZoneTask = /*#__PURE__*/function () {
@@ -13023,7 +12981,7 @@
               }
             }
 
-            _createClass(ZoneTask, [{
+            return _createClass(ZoneTask, [{
               key: "zone",
               get: function get() {
                 return this._zone;
@@ -13095,8 +13053,6 @@
                 }
               }
             }]);
-
-            return ZoneTask;
           }(); //////////////////////////////////////////////////////
           //////////////////////////////////////////////////////
           ///  MICROTASK QUEUE
@@ -13590,7 +13546,7 @@
               }
             }
 
-            _createClass(ZoneAwarePromise, [{
+            return _createClass(ZoneAwarePromise, [{
               key: Symbol.toStringTag,
               get: function get() {
                 return 'Promise';
@@ -13800,8 +13756,6 @@
                 return promise;
               }
             }]);
-
-            return ZoneAwarePromise;
           }(); // Protect against aggressive optimizers dropping seemingly unused properties.
           // E.g. Closure Compiler in advanced mode.
 
@@ -14009,7 +13963,7 @@
         function patchPrototype(prototype, fnNames) {
           var source = prototype.constructor['name'];
 
-          var _loop3 = function _loop3(i) {
+          var _loop3 = function _loop3() {
             var name = fnNames[i];
             var delegate = prototype[name];
 
@@ -14017,7 +13971,7 @@
               var prototypeDesc = ObjectGetOwnPropertyDescriptor(prototype, name);
 
               if (!isPropertyWritable(prototypeDesc)) {
-                return "continue";
+                return 1; // continue
               }
 
               prototype[name] = function (delegate) {
@@ -14032,9 +13986,7 @@
           };
 
           for (var i = 0; i < fnNames.length; i++) {
-            var _ret = _loop3(i);
-
-            if (_ret === "continue") continue;
+            if (_loop3()) continue;
           }
         }
 
@@ -16282,15 +16234,15 @@
           var description = !arguments.length || arguments[0] === undefined ? undefined : String(arguments[0]);
           var tag = uid(description);
 
-          var setter = function setter(value) {
-            if (this === ObjectPrototype) setter.call(ObjectPrototypeSymbols, value);
+          var _setter = function setter(value) {
+            if (this === ObjectPrototype) _setter.call(ObjectPrototypeSymbols, value);
             if (has(this, HIDDEN) && has(this[HIDDEN], tag)) this[HIDDEN][tag] = false;
             setSymbolDescriptor(this, tag, createPropertyDescriptor(1, value));
           };
 
           if (DESCRIPTORS && USE_SETTER) setSymbolDescriptor(ObjectPrototype, tag, {
             configurable: true,
-            set: setter
+            set: _setter
           });
           return wrap(tag, description);
         };
@@ -16434,9 +16386,7 @@
             var index = 1;
             var $replacer;
 
-            while (arguments.length > index) {
-              args.push(arguments[index++]);
-            }
+            while (arguments.length > index) args.push(arguments[index++]);
 
             $replacer = replacer;
             if (!isObject(replacer) && it === undefined || isSymbol(it)) return; // IE8 returns string on undefined
@@ -16828,7 +16778,7 @@
     /*! no static exports found */
 
     /***/
-    function rVq(module, exports, __webpack_require__) {
+    function r_Vq(module, exports, __webpack_require__) {
       var $ = __webpack_require__(
       /*! ../internals/export */
       "I+eb"); // `Number.MAX_SAFE_INTEGER` constant
@@ -17420,9 +17370,7 @@
             if (typeof this != 'function' || !isObject(O)) return false;
             if (!isObject(this.prototype)) return O instanceof this; // for environment w/o native `@@hasInstance` logic enough `instanceof`, but add this:
 
-            while (O = getPrototypeOf(O)) {
-              if (this.prototype === O) return true;
-            }
+            while (O = getPrototypeOf(O)) if (this.prototype === O) return true;
 
             return false;
           }
@@ -17670,7 +17618,7 @@
     /*! no static exports found */
 
     /***/
-    function tlU(module, exports, __webpack_require__) {
+    function tl_u(module, exports, __webpack_require__) {
       var $ = __webpack_require__(
       /*! ../internals/export */
       "I+eb");
@@ -17725,8 +17673,8 @@
       var nativeToFixed = 1.0.toFixed;
       var floor = Math.floor;
 
-      var pow = function pow(x, n, acc) {
-        return n === 0 ? acc : n % 2 === 1 ? pow(x, n - 1, acc * x) : pow(x * x, n / 2, acc);
+      var _pow = function pow(x, n, acc) {
+        return n === 0 ? acc : n % 2 === 1 ? _pow(x, n - 1, acc * x) : _pow(x * x, n / 2, acc);
       };
 
       var log = function log(x) {
@@ -17813,8 +17761,8 @@
           }
 
           if (number > 1e-21) {
-            e = log(number * pow(2, 69, 1)) - 69;
-            z = e < 0 ? number * pow(2, -e, 1) : number / pow(2, e, 1);
+            e = log(number * _pow(2, 69, 1)) - 69;
+            z = e < 0 ? number * _pow(2, -e, 1) : number / _pow(2, e, 1);
             z *= 0x10000000000000;
             e = 52 - e;
 
@@ -17827,7 +17775,7 @@
                 j -= 7;
               }
 
-              multiply(pow(10, j, 1), 0);
+              multiply(_pow(10, j, 1), 0);
               j = e - 1;
 
               while (j >= 23) {
@@ -17908,31 +17856,29 @@
           var target = IS_MAP ? create($this, length) : IS_FILTER ? create($this, 0) : undefined;
           var value, result;
 
-          for (; length > index; index++) {
-            if (NO_HOLES || index in self) {
-              value = self[index];
-              result = boundFunction(value, index, O);
+          for (; length > index; index++) if (NO_HOLES || index in self) {
+            value = self[index];
+            result = boundFunction(value, index, O);
 
-              if (TYPE) {
-                if (IS_MAP) target[index] = result; // map
-                else if (result) switch (TYPE) {
-                    case 3:
-                      return true;
-                    // some
+            if (TYPE) {
+              if (IS_MAP) target[index] = result; // map
+              else if (result) switch (TYPE) {
+                case 3:
+                  return true;
+                // some
 
-                    case 5:
-                      return value;
-                    // find
+                case 5:
+                  return value;
+                // find
 
-                    case 6:
-                      return index;
-                    // findIndex
+                case 6:
+                  return index;
+                // findIndex
 
-                    case 2:
-                      push.call(target, value);
-                    // filter
-                  } else if (IS_EVERY) return false; // every
-              }
+                case 2:
+                  push.call(target, value);
+                // filter
+              } else if (IS_EVERY) return false; // every
             }
           }
 
@@ -18664,15 +18610,11 @@
         var result = [];
         var key;
 
-        for (key in O) {
-          !has(hiddenKeys, key) && has(O, key) && result.push(key);
-        } // Don't enum bug & hidden keys
+        for (key in O) !has(hiddenKeys, key) && has(O, key) && result.push(key); // Don't enum bug & hidden keys
 
 
-        while (names.length > i) {
-          if (has(O, key = names[i++])) {
-            ~indexOf(result, key) || result.push(key);
-          }
+        while (names.length > i) if (has(O, key = names[i++])) {
+          ~indexOf(result, key) || result.push(key);
         }
 
         return result;
@@ -18926,6 +18868,6 @@
       });
       /***/
     }
-  }, [[4, "runtime"]]]);
+  }, [[6, "runtime"]]]);
 })();
 //# sourceMappingURL=polyfills-es5.js.map

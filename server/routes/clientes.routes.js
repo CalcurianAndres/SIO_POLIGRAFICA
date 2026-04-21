@@ -495,20 +495,154 @@ app.post('/api/prints', (req, res) => {
 
 })
 
-app.get('/api/copy/:orden/:cantidad', (req, res) => {
-    let orden = req.params.orden;
-    let cantidad = req.params.cantidad;
-    let nombre = `${orden}-${cantidad}-${HOY}.pdf`
-    var path = `\\\\192.168.0.26/Poligrafica_Archivos/DEPARTAMENTO DE OPERACIONES/Etiquetas SIO/${nombre}`;
-    // var path = `\\\\192.168.0.27/Formatos/Etiquetas SIO/${nombre}`;
-    setTimeout(() => {
-        fs.copyFile("C:/Users/administrador/Desktop/SIOBK/SIO2025B/documento_test.pdf", path, (err) => {
-            if (err) throw err;
-            //console.log('SE REALIZÓ LA COPIA DE ETIQUETA A LOS SERVIDORES');
+app.get('/api/copy/:orden/:cantidad/:producto', async (req, res) => {
+    try {
+
+        const orden = req.params.orden;
+        const cantidad = parseInt(req.params.cantidad);
+        const producto = req.params.producto;
+
+        // 🔒 Sanitizar nombre de producto para Windows
+        const productoSeguro = producto.replace(/[\\/:*?"<>|]/g, '').trim();
+
+        const fecha = new Date();
+        const year = fecha.getFullYear();
+        const HOY = fecha.toISOString().split('T')[0];
+
+        const nombrePDF = `${orden}-${cantidad}-${HOY}.pdf`;
+
+        const basePath = `\\\\192.168.0.26/Poligrafica_Archivos/DEPARTAMENTO DE OPERACIONES/Etiquetas SIO`;
+
+        const carpetaAnual = path.join(basePath, year.toString());
+
+        // 📁 Carpeta ahora es: ORDEN - PRODUCTO
+        const nombreCarpetaOrden = `${orden} - ${productoSeguro}`;
+        const carpetaOrden = path.join(carpetaAnual, nombreCarpetaOrden);
+
+        // Crear carpetas si no existen
+        await fs.promises.mkdir(carpetaOrden, { recursive: true });
+
+        const destino = path.join(carpetaOrden, nombrePDF);
+
+        // Copiar PDF
+        await fs.promises.copyFile(
+            "C:/Users/administrador/Desktop/SIOBK/SIO2025B/documento_test.pdf",
+            destino
+        );
+
+        // 🔥 Actualizar resumen por orden
+        await actualizarResumenOrden(carpetaOrden, orden, productoSeguro);
+
+        // 🔥 Actualizar resumen anual
+        await actualizarResumenAnual(carpetaAnual, year);
+
+        res.json({ ok: true, message: 'Archivo copiado y resumen actualizado correctamente' });
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ ok: false, error: err.message });
+    }
+});
+
+async function actualizarResumenOrden(carpetaOrden, orden, producto) {
+
+    const files = await fs.promises.readdir(carpetaOrden);
+
+    const pdfs = files.filter(f => f.endsWith('.pdf'));
+
+    let historial = [];
+    let totalEtiquetas = 0;
+
+    for (let file of pdfs) {
+
+        // formato: orden-cantidad-fecha.pdf
+        const partes = file.replace('.pdf', '').split('-');
+
+        const cantidad = parseInt(partes[1]);
+        const fecha = partes[2];
+
+        totalEtiquetas += cantidad;
+
+        historial.push({
+            cantidad,
+            fecha
         });
-    }, 1000);
-    res.json('ok')
-})
+    }
+
+    const stats = await fs.promises.stat(carpetaOrden);
+
+    const resumen = {
+        orden,
+        producto,
+        fecha_creacion_carpeta: stats.birthtime,
+        total_pdfs: pdfs.length,
+        historial
+    };
+
+    await fs.promises.writeFile(
+        path.join(carpetaOrden, 'resumen-orden.json'),
+        JSON.stringify(resumen, null, 4)
+    );
+}
+
+async function actualizarResumenAnual(carpetaAnual, year) {
+
+    const carpetas = await fs.promises.readdir(carpetaAnual, { withFileTypes: true });
+
+    const ordenFolders = carpetas
+        .filter(d => d.isDirectory())
+        .map(d => d.name);
+
+    let totalOrdenes = ordenFolders.length;
+    let totalPdfs = 0;
+    let totalEtiquetas = 0;
+    let ultimaOrden = null;
+    let ultimaFecha = null;
+
+    for (let folderName of ordenFolders) {
+
+        const carpetaOrden = path.join(carpetaAnual, folderName);
+        const files = await fs.promises.readdir(carpetaOrden);
+
+        const pdfs = files.filter(f => f.endsWith('.pdf'));
+
+        totalPdfs += pdfs.length;
+
+        // Separar número de orden del nombre "ORDEN - PRODUCTO"
+        const ordenNumero = folderName.split(' - ')[0];
+
+        for (let file of pdfs) {
+
+            const partes = file.replace('.pdf', '').split('-');
+
+            const cantidad = parseInt(partes[1]);
+            const fecha = partes[2];
+
+            totalEtiquetas += cantidad;
+
+            if (!ultimaFecha || new Date(fecha) > new Date(ultimaFecha)) {
+                ultimaFecha = fecha;
+                ultimaOrden = ordenNumero;
+            }
+        }
+    }
+
+    const stats = await fs.promises.stat(carpetaAnual);
+
+    const resumenAnual = {
+        año: year,
+        fecha_creacion: stats.birthtime,
+        total_ordenes: totalOrdenes,
+        total_pdfs_generados: totalPdfs,
+        ultima_orden_creada: ultimaOrden,
+        ultima_fecha_generacion: ultimaFecha
+    };
+
+    await fs.promises.writeFile(
+        path.join(carpetaAnual, 'resumen-anual.json'),
+        JSON.stringify(resumenAnual, null, 4)
+    );
+}
 
 app.get('/api/clientes', (req, res) => {
 

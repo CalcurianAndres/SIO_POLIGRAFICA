@@ -18,6 +18,7 @@
     "chalk": "^4.1.2",
     "consulta-dolar-venezuela": "^1.1.1",
     "cors": "^2.8.5",
+    "exceljs": "^4.4.0",
     "express": "^4.17.1",
     "express-fileupload": "^1.2.0",
     "forever": "^3.0.4",

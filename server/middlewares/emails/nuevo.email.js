@@ -214,20 +214,16 @@ function NuevaOrden2(orden, lotes, adjunto) {
 
 function NuevaOrden(orden, nombre, correo) {
     var transporter = nodemailer.createTransport({
-        host: "mail.poligraficaindustrial.com",
-        port: 2525,
-        secure: false,
+        host: "smtp.office365.com",
+        port: 587,
+        secure: false, // SIEMPRE false con STARTTLS
         auth: {
             user: 'sio.soporte@poligraficaindustrial.com',
-            pass: 'P0l1ndc@'
+            pass: 'LkBUe2Drk%pe16YL'
         },
         tls: {
-            rejectUnauthorized: false
-        },
-        maxConnections: 5,
-        maxMessages: 10,
-        rateDelta: 1000, // 1000 ms delay between sending emails
-        rateLimit: true
+            ciphers: 'SSLv3'
+        }
     });
     let titulo = `<h1>Hola ${nombre},</h1>`
     var mailOptions = {
@@ -254,20 +250,16 @@ function NuevaOrden(orden, nombre, correo) {
 
 function SolicitudMateria(orden, producto) {
     var transporter = nodemailer.createTransport({
-        host: "mail.poligraficaindustrial.com",
-        port: 2525,
-        secure: false,
+        host: "smtp.office365.com",
+        port: 587,
+        secure: false, // SIEMPRE false con STARTTLS
         auth: {
             user: 'sio.soporte@poligraficaindustrial.com',
-            pass: 'P0l1ndc@'
+            pass: 'LkBUe2Drk%pe16YL'
         },
         tls: {
-            rejectUnauthorized: false
-        },
-        maxConnections: 5,
-        maxMessages: 10,
-        rateDelta: 1000, // 1000 ms delay between sending emails
-        rateLimit: true
+            ciphers: 'SSLv3'
+        }
     });
     let titulo = `<h1>Hola Yraida,</h1>`
     var mailOptions = {

@@ -42,7 +42,6 @@ let AlmacenadoSchema = new Schema({
 });
 
 
-// Índices compuestos (MUY IMPORTANTE para tu query)
 AlmacenadoSchema.index({ cantidad: 1, fuera: 1 });
 AlmacenadoSchema.index({ material: 1 });
 

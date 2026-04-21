@@ -4,20 +4,16 @@ const { header, header3, footer } = require('../templates/template.email')
 function devolucion(orden, solicitud, adjunto, nombre, correo, tabla) {
 
     var transporter = nodemailer.createTransport({
-        host: "mail.poligraficaindustrial.com",
-        port: 2525,
-        secure: false,
+        host: "smtp.office365.com",
+        port: 587,
+        secure: false, // SIEMPRE false con STARTTLS
         auth: {
             user: 'sio.soporte@poligraficaindustrial.com',
-            pass: 'P0l1ndc@'
+            pass: 'LkBUe2Drk%pe16YL'
         },
         tls: {
-            rejectUnauthorized: false
-        },
-        maxConnections: 5,
-        maxMessages: 10,
-        rateDelta: 1000, // 1000 ms delay between sending emails
-        rateLimit: true
+            ciphers: 'SSLv3'
+        }
     });
 
 
@@ -91,20 +87,16 @@ function devolucion(orden, solicitud, adjunto, nombre, correo, tabla) {
 function devolucion2(orden, solicitud, nombre, correo, tabla) {
 
     var transporter = nodemailer.createTransport({
-        host: "mail.poligraficaindustrial.com",
-        port: 2525,
-        secure: false,
+        host: "smtp.office365.com",
+        port: 587,
+        secure: false, // SIEMPRE false con STARTTLS
         auth: {
             user: 'sio.soporte@poligraficaindustrial.com',
-            pass: 'P0l1ndc@'
+            pass: 'LkBUe2Drk%pe16YL'
         },
         tls: {
-            rejectUnauthorized: false
-        },
-        maxConnections: 5,
-        maxMessages: 10,
-        rateDelta: 1000, // 1000 ms delay between sending emails
-        rateLimit: true
+            ciphers: 'SSLv3'
+        }
     });
 
 
